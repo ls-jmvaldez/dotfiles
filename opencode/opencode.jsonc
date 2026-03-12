@@ -1,4 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["opencode-anthropic-auth@latest"]
+  "plugin": ["opencode-anthropic-auth@latest"],
+  "mcp": {},
 }

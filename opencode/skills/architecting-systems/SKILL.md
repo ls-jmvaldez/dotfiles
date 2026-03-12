@@ -1,6 +1,7 @@
 ---
 name: architecting-systems
-description: Guides clean, scalable system architecture during the build phase. Use when designing modules, defining boundaries, structuring projects, managing dependencies, or preventing tight coupling and brittleness as systems grow.
+description: Guides clean, scalable system architecture during the build phase. Use when designing modules, defining boundaries,
+structuring projects, managing dependencies, or preventing tight coupling and brittleness as systems grow.
 license: MIT
 compatibility: opencode
 ---
