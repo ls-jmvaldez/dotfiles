@@ -48,6 +48,10 @@ Projects are under LegalShield GitHub org. Common stacks:
 - LaunchDarkly for feature flags
 - New Relic for observability
 
+## Comments
+
+Don't leave AI-style comments. Comments explain WHY, never WHAT. If code needs a comment to explain what it does, refactor the code instead (better names, extract functions, use constants). TODOs must reference a ticket. See `~/.claude/knowledge/documenting-code-comments.md` for full guidelines.
+
 ## Working Style
 
 - Read existing code before writing new code. Match patterns already in the codebase.
