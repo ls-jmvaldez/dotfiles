@@ -2,6 +2,7 @@
 name: test
 description: Run tests and analyze failures
 argument-hint: Test command or path. If not provided, auto-detect.
+model: sonnet
 ---
 
 Run tests and analyze any failures.

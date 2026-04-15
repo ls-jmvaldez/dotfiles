@@ -2,6 +2,7 @@
 name: jira
 description: Execute Jira operations (create stories, search issues, manage sprints)
 argument-hint: "Jira operation to perform"
+model: sonnet
 ---
 
 Read the knowledge files at `~/.claude/knowledge/jira/jira.md` and `~/.claude/knowledge/writer.md` (use **The Engineer** persona for all ticket content) before proceeding, then execute the following Jira task.

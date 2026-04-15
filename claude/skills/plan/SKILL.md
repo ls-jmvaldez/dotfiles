@@ -2,6 +2,7 @@
 name: plan
 description: Create a detailed implementation plan for a feature or task
 argument-hint: Feature or task description
+model: sonnet
 ---
 
 Create an implementation plan. Read the knowledge file at `~/.claude/knowledge/writing-plans.md` before proceeding.

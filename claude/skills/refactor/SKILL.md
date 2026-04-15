@@ -2,6 +2,7 @@
 name: refactor
 description: Refactor code following best practices
 argument-hint: File path, function name, or pattern to refactor. If not provided, refactors unstaged changes.
+model: sonnet
 ---
 
 Refactor code to improve quality, maintainability, and adherence to best practices. Read the knowledge file at `~/.claude/knowledge/refactoring-code.md` before proceeding.

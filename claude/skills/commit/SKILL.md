@@ -2,6 +2,7 @@
 name: commit
 description: Create a well-formatted git commit for current changes
 argument-hint: Optional context about the changes
+model: sonnet
 ---
 
 Create a git commit for the current changes.

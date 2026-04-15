@@ -2,6 +2,7 @@
 name: newrelic
 description: Query New Relic for service health, error triage, and bug investigation across payment services and internal tooling. Read-only diagnostic skill — never makes deployments, rollbacks, or config changes.
 argument-hint: "describe what to investigate"
+model: sonnet
 ---
 
 # New Relic Debugging & Observability

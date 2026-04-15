@@ -2,6 +2,7 @@
 name: fix-issue
 description: Fix a GitHub issue by number
 argument-hint: The GitHub issue number, e.g., "123" or "#123"
+model: sonnet
 ---
 
 Fetch a GitHub issue and implement a fix for it.

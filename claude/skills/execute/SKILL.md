@@ -2,6 +2,7 @@
 name: execute
 description: Execute an implementation plan from the plans folder
 argument-hint: "Optional path to plan file"
+model: sonnet
 ---
 
 Execute an implementation plan. Read the knowledge file at `~/.claude/knowledge/executing-plans.md` before proceeding.
@@ -64,5 +65,7 @@ Arguments: $ARGUMENTS (Optional path to plan file)
 
 - You are an orchestrator; spawn sub-agents for actual implementation
 - Fewer agents with broader scope = faster execution
+- Limit parallel agents to a maximum of 4 at a time; batch remaining work into sequential rounds
+- When spawning agents via the Agent tool, use `model: "sonnet"` unless a task explicitly requires deep architectural reasoning
 - Verify all four checks before marking complete
 - If same error occurs twice, stop and ask user

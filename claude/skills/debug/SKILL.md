@@ -2,6 +2,7 @@
 name: debug
 description: Start systematic debugging session for a bug
 argument-hint: Description of the bug or error message
+model: sonnet
 ---
 
 Debug and fix a bug. Read the knowledge file at `~/.claude/knowledge/systematic-debugging/systematic-debugging.md` before proceeding.
