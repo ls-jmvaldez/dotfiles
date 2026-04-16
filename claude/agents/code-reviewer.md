@@ -115,9 +115,32 @@ Structure your review as follows:
 ## Verdict
 
 **[APPROVE | REQUEST CHANGES]** - [One sentence explanation]
+
+## Manual Test Steps
+
+[Numbered list of user-observable behaviors a human should verify in a browser or client. One step per changed feature. Skip this section only if the change has no user-visible effect — pure refactors, internal types, config-only changes. In that case say "No user-visible changes — static checks sufficient."]
+
+1. [Step with expected outcome]
+2. [Step with expected outcome]
+
+## Run Locally
+
+[Paste-ready snippet to check out the branch in a worktree and start the app. Derive the start command from the project's CLAUDE.md (e.g. `pnpm -w <prefix>-dev`). Fall back to "see CLAUDE.md for start command" only if nothing is discoverable.]
+
+```bash
+cd <current-worktree-path>
+<start-command>
+```
 ```
 
 ## Review Principles
+
+**Confidence Filter**
+
+- Only report an issue if you are **>80% confident** it is a real problem. Hedging language ("this could possibly...", "it might be better to...") is a sign you should not be reporting it.
+- **Consolidate similar issues.** If the same pattern appears in 5 files, report it once with representative file:line examples. Do not enumerate every occurrence.
+- **Skip purely stylistic noise** unless a project rule requires it. Formatting, naming preferences, and personal taste are not review findings.
+- Prefer fewer high-signal findings over a long list of low-signal ones. If the list runs past ~10 findings, filter harder.
 
 **Be Constructive and Specific**
 
