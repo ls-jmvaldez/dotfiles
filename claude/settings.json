@@ -59,6 +59,7 @@
       "Read(settings.local.json)"
     ]
   },
+  "model": "opus[1m]",
   "hooks": {
     "PreToolUse": [
       {
@@ -100,10 +101,14 @@
             "type": "command",
             "command": "bash ~/.claude/hooks/pr-review-attribution.sh",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/pr-ai-attribution.sh",
+            "timeout": 15
           }
         ]
       }
     ]
-  },
-  "model": "sonnet[1m]"
+  }
 }
