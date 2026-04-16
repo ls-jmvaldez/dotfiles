@@ -71,6 +71,39 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/pr-jira-links.sh",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/pr-attribution.sh",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/pr-comment-attribution.sh",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/pr-issue-comment-attribution.sh",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/pr-review-attribution.sh",
+            "timeout": 15
+          }
+        ]
+      }
     ]
-  }
+  },
+  "model": "sonnet[1m]"
 }

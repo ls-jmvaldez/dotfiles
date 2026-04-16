@@ -67,6 +67,10 @@ Example: `int-membership-details: Shared Foundations`
 
 Omit the `assignee` field when creating issues unless the user explicitly requests assignment.
 
+### Label AI-created tickets
+
+Every issue created by or with AI assistance MUST include the labels `AI` and `AI_Created`. These labels are already established in COREAPP1 and should be applied to all projects. Add them to the `labels` array in the issue creation payload alongside any other labels.
+
 ### Workflow: plan one story at a time
 
 Present the story summary and subtask list to the user for review before creating anything via the API. Wait for explicit approval. Corrections before creation are cheap. Rework after creation is not.
