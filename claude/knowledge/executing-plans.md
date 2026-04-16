@@ -1,109 +1,123 @@
 ---
 name: executing-plans
-description: Executes implementation plans with smart task grouping. Groups related tasks to share context, parallelizes across independent subsystems.
+description: Executes implementation plans. Provisions worktrees from the Branch Plan, routes tasks per phase, opens draft PRs at phase boundaries.
 license: MIT
 ---
 
 # Executing Plans
 
-**You are an orchestrator.** Spawn and coordinate sub-agents to do the actual implementation. Group related tasks by subsystem (e.g., one agent for API routes, another for tests) rather than spawning per-task. Each agent re-investigates the codebase, so fewer agents with broader scope = faster execution.
+**You are an orchestrator.** Spawn sub-agents to do the actual implementation. Your job is to read the plan, provision git state from its Branch Plan, route tasks into the right worktree per phase, and commit/push/open draft PRs at phase boundaries. The user never runs git by hand from this flow.
 
-## 1. Setup
+## Status Lifecycle
 
-**Create a branch** for the work unless trivial. Consider git worktrees for isolated environments.
+A plan file's `> **Status:**` header moves through these states:
 
-**Clarify ambiguity upfront:** If the plan has unclear requirements or meaningful tradeoffs, ask the user before starting. Don't guess when the user can clarify in 10 seconds.
+| From | To | When |
+|------|----|------|
+| `DRAFT` | `IN_PROGRESS` | `/execute` fires — invocation is approval |
+| `APPROVED` | `IN_PROGRESS` | `/execute` fires on a plan already explicitly approved |
+| `IN_PROGRESS` | `COMPLETED` | All phases committed, pushed, and draft PRs opened |
+| `IN_PROGRESS` | `IN_PROGRESS` | A phase failed — re-run resumes from that phase |
+| any | `COMPLETED` | Manually only if work was abandoned or merged elsewhere |
 
-**Track progress with tasks:** Use `TaskCreate` to create tasks for each major work item from the plan. Use `TaskUpdate` to update status as work progresses (`in_progress` when starting, `completed` when done). This makes execution visible to the user and persists across context compactions.
+Flip the status on disk before any git work starts. If the plan is already `COMPLETED`, stop immediately.
 
-## 2. Group Tasks by Subsystem
+## Branch Plan Contract
 
-Group related tasks to share agent context. One agent per subsystem, groups run in parallel.
+The plan's `## Branch Plan` section is a markdown table. Each row maps to exactly one phase, one branch, one worktree, one draft PR.
 
-**Why grouping matters:**
 ```
-Without: Task 1 (auth/login) -> Agent 1 [explores auth/]
-         Task 2 (auth/logout) -> Agent 2 [explores auth/ again]
-
-With:    Tasks 1-2 (auth/*) -> Agent 1 [explores once, executes both]
+| # | Branch               | Worktree Path                    | Base                |
+| - | -------------------- | -------------------------------- | ------------------- |
+| 1 | feat/COREAPP1-3307-a | .claude/worktrees/COREAPP1-3307-pr1 | main             |
+| 2 | feat/COREAPP1-3307-b | .claude/worktrees/COREAPP1-3307-pr2 | feat/COREAPP1-3307-a |
 ```
+
+Rule: row N's base is either `main` (or `origin/main`) or the branch of row N-1 (stacked). Independent PRs always use `main`. Stacked PRs chain through previous rows' branches.
+
+## Provisioning
+
+For each Branch Plan row:
+
+```
+git worktree add -b <branch> <worktree-path> <base>
+```
+
+The `worktree-conflict.sh` PreToolUse hook runs automatically and warns on stderr if the incoming branch would overlap with files in another active worktree. Surface any warning to the user and pause for direction. Do not silently proceed.
+
+If a worktree already exists at the path (resuming), `git worktree add` errors. That's the signal to skip — the worktree is already provisioned.
+
+## Phase Routing
+
+Each `## Phase N:` heading in the plan maps to Branch Plan row N. All tasks inside the phase run in that phase's worktree.
+
+Spawn subagents with `cwd: <worktree-path>` so every file edit, test run, and git command lands in the right tree. Do not run edits from the main working directory.
+
+Within a phase:
+
+- Subsystem groups (third-level headings like `### Authentication subsystem`) run in parallel agents
+- Tasks inside a subsystem group run sequentially inside one agent
+- Max 4 parallel agents per phase
 
 | Signal | Group together |
 |--------|----------------|
 | Same directory prefix | `src/auth/*` tasks |
 | Same domain/feature | Auth tasks, billing tasks |
-| Plan sections | Tasks under same `##` heading |
+| Same subsystem heading | Tasks under one `###` in the plan |
 
-**Limits:** 3-4 tasks max per group. Split if larger.
+## Verify Before Committing
 
-**Parallel:** Groups touch different subsystems
-```
-Group A: src/auth/*    -+- parallel
-Group B: src/billing/* -+
-```
+Every task in the plan should end with a `**Verify:**` command. Run it before committing that task's work. If verification fails:
 
-**Sequential:** Groups have dependencies
-```
-Group A: Create shared types -> Group B: Use those types
-```
+1. The subagent attempts to fix the failure (it has the context).
+2. If it can't fix, it reports the error output.
+3. Dispatch a focused fix agent with the error.
+4. If the same error recurs after two attempts, stop the phase and surface to the user.
 
-## 3. Execute
+## Phase Boundary: Commit, Push, Draft PR
 
-Dispatch sub-agents to complete task groups. Monitor progress and handle issues.
+After all subsystem groups in a phase finish cleanly:
 
-```
-Task tool (general-purpose):
-  description: "Auth tasks: login, logout"
-  prompt: |
-    Execute these tasks from [plan-file] IN ORDER:
-    - Task 1: Add login endpoint
-    - Task 2: Add logout endpoint
+1. `cd <worktree-path>` or use `git -C <worktree-path>` for every command.
+2. Stage only the files this phase modified. `git add <file1> <file2>`. Never `git add -A` or `git add .`.
+3. Commit with a conventional-commit message:
+   - Header: `<type>(<scope>): <phase-name-kebab-lowercase>` (50 chars max)
+   - Body: why this phase exists, pulled from the plan's Specification. 2-3 sentences, no em dashes.
+4. `git push -u origin <branch>`
+5. `gh pr create --draft --base <base> --title <title> --body <body>` where:
+   - Title is the phase name (+ ticket key if present in the plan)
+   - Body links the plan file path, any Jira tickets, and summarizes the phase
+6. Report the PR URL immediately. Later phases can execute while Copilot reviews this one.
 
-    Read knowledge files: <relevant knowledge file paths>
-    Commit after each task. Report: files changed, test results
-```
+## Completion
 
-**Architectural fit:** Changes should integrate cleanly with existing patterns. If a change feels like it's fighting the architecture, that's a signal to refactor first rather than bolt something on. Don't reinvent wheels when battle-tested libraries exist, but don't reach for a dependency for trivial things either.
+Once the last phase ships its PR:
 
-**Auto-recovery:**
-1. Agent attempts to fix failures (has context)
-2. If can't fix, report failure with error output
-3. Dispatch fix agent with context
-4. Same error twice -> stop and ask user
+- Flip status to `COMPLETED`
+- Move the plan file to `plans/done/<same-name>.md`
+- Summary report: plan path, all PR URLs, all branches
 
-## 4. Verify
+## Failure Handling
 
-All four checks must pass before marking complete:
+- Leave plan at `IN_PROGRESS`
+- Append under the status header: `**Failed at:** Phase N — <one-line reason>`
+- Surface the error to the user
+- Re-invoking `/execute` on the same plan skips provisioning for already-created worktrees and resumes at the failing phase
 
-1. **Code review:** Use `@code-reviewer` to review all changes. Fix issues before proceeding.
+## What This Flow Does Not Do
 
-2. **Automated tests:** Run the full test suite. All tests must pass.
+- **Auto-rebase stacked PRs.** When a parent branch is force-pushed, child PRs need manual rebase. Deferred until a `/stack` skill is built from real scenarios.
+- **Auto-merge.** Draft PRs stay draft. Merging is a human decision.
+- **Architectural second-guessing.** If the plan says "use library X," use library X. Surface concerns to the user rather than deviating silently.
 
-3. **Manual verification:** Automated tests aren't sufficient. Actually exercise the changes:
-   - **API changes:** Curl endpoints with realistic payloads
-   - **CLI changes:** Run actual commands, verify output
-   - **Parser changes:** Feed real data, not just fixtures
+## Architectural Fit
 
-4. **DX quality:** During manual testing, watch for friction:
-   - Confusing error messages
-   - Noisy output
-   - Inconsistent behavior
+Changes should integrate cleanly with existing patterns. If a subagent's work is fighting the architecture, that's a signal to escalate — refactor first as a separate phase, or ask the user whether to proceed. Don't reinvent wheels when existing libraries solve the problem, but don't reach for a dependency for trivial things either.
 
-   Fix DX issues inline or document for follow-up.
+## Principles
 
-## 5. Commit
-
-After verification passes, commit only the changes related to this plan:
-
-1. Run `git status` to see all changes
-2. **Stage files by name, not with `git add -A` or `git add .`** - only stage files you modified as part of this plan
-3. **Leave unrelated changes alone** - if there are pre-existing staged or unstaged changes that aren't part of this work, don't touch them
-4. Write a commit message that summarizes what was implemented, referencing the plan
-
-## 6. Cleanup
-
-After committing:
-- Merge branch to main (if using branches)
-- Remove worktree (if using worktrees)
-- Mark plan file as COMPLETED
-- Move to `./plans/done/` if applicable
+- You are an orchestrator. Subagents do the implementation.
+- The plan is the source of truth. Wrong plan → stop and fix the plan, don't improvise.
+- User never types git commands from this flow.
+- Fewer agents with broader scope run faster than many narrow ones.
+- Fail fast: a broken phase does not get committed.
