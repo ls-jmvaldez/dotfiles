@@ -1,66 +1,80 @@
 ---
 name: plan
-description: Create a detailed implementation plan for a feature or task
-argument-hint: Feature or task description
-model: sonnet
+description: Create a detailed implementation plan for a feature or task, optionally loading Jira context first
+argument-hint: Jira key (e.g. COREAPP1-3307) or a free-text feature description
+model: opus[1m]
 ---
 
 Create an implementation plan. Read the knowledge file at `~/.claude/knowledge/writing-plans.md` before proceeding.
 
-Arguments: $ARGUMENTS (Feature or task description)
+Arguments: $ARGUMENTS (Jira key or feature description)
 
 ## Process
 
-1. Read the knowledge file at ~/.claude/knowledge/writing-plans.md before proceeding
-2. Clarify ambiguity upfront if needed (ask user about tradeoffs)
-3. Create plan following the template structure
+1. **Read the knowledge file** at `~/.claude/knowledge/writing-plans.md` so the template shape is current.
 
-## Plan Structure
+2. **Resolve the source material** from the first argument:
 
-Save to: `**/plans/YYYY-MM-DD-<feature-name>.md`
+   - **If the argument matches a Jira key pattern** (`[A-Z][A-Z0-9]+-[0-9]+`, e.g. `COREAPP1-3307`, `OPSUC-2260`): spawn a subagent to load ticket context before authoring. Use the Agent tool with:
 
-```markdown
-# [Feature Name] Implementation Plan
+     ```
+     subagent_type: general-purpose
+     model: haiku
+     description: Load Jira ticket context
+     prompt: |
+       Fetch Jira ticket <KEY> and return a compact context block. Use the pattern in
+       ~/.claude/knowledge/jira/jira.md for authentication and the `Get Issue Details`
+       endpoint. Return:
+         - Title
+         - Description (raw text, not ADF)
+         - Acceptance criteria (if present)
+         - Parent epic key and title
+         - Linked issues (blocked by / blocks / relates)
+         - Current status
+       Keep the block under 400 words. Do not speculate — if a field is empty, say "(none)".
+     ```
 
-> **Status:** DRAFT | APPROVED | IN_PROGRESS | COMPLETED
+     Wait for the subagent to return. Use its output as the authoritative source for the plan's Specification section.
 
-## Specification
+   - **Otherwise**: treat the argument as a free-text feature description. No subagent call.
 
-**Goal:** [What we're building and why]
+3. **Clarify any ambiguity upfront.** If the ticket or description leaves meaningful tradeoffs unresolved, ask the user before authoring. Corrections before writing are cheap.
 
-**Success Criteria:**
-- [ ] Criterion 1
-- [ ] Criterion 2
+4. **Author the plan** following the template structure from `writing-plans.md`. The author model is already Opus (this skill's frontmatter), so there is no further handoff.
 
-## Context Loading
+5. **Required sections** — the plan is incomplete without all of these:
 
-_Run before starting:_
-[Commands to read relevant files]
+   - `## Specification` — goal and success criteria
+   - `## PR Strategy` — split choice with Independence Check
+   - `## Branch Plan` — one row per PR, with branch name, worktree path, base
+   - `## Context Loading` — files/globs to read before executing
+   - `## Phase N:` sections — one per Branch Plan row
 
-## Tasks
+6. **Decide split:**
 
-### Task 1: [Complete Feature Unit]
+   - Default to **single PR** unless the scope clearly exceeds what one reviewer can hold in their head.
+   - Use **stacked PRs** when later phases import from earlier ones or build on shared types introduced mid-plan.
+   - Use **independent PRs** only when the Independence Check passes cleanly. If in doubt, use stacked.
 
-**Context:** [Relevant directories/files]
+7. **Save to** `**/plans/YYYY-MM-DD-<slug>.md`:
 
-**Steps:**
-1. [ ] Step 1
-2. [ ] Step 2
+   - If the source was a Jira key: slug = lowercase ticket key (e.g. `coreapp1-3307`).
+   - If free-text: slug = kebab-case of a short feature name.
 
-**Verify:** [Command to verify task completion]
-```
+8. **Set status to DRAFT** and report the path. The user reviews the file. `/execute` invocation acts as approval (it flips status to `IN_PROGRESS`).
 
 ## Key Principles
 
-- Each task is a complete unit of work for one agent
-- Group related tasks by subsystem for parallel execution
-- Include explicit file paths, not vague descriptions
-- End every task with a verification command
-- Max 3-4 tasks per group; split larger sections
+- Each phase maps to one PR and one worktree.
+- A phase should be mergeable on its own. No plans where nothing works until everything lands.
+- Explicit file paths, not vague descriptions. Say `create src/utils/helpers.ts`, not `create a utility`.
+- Every task ends with a verification command.
+- Max 3-4 tasks per subsystem group inside a phase; split larger sections.
 
 ## Large Plans
 
 For plans over ~500 lines, split into phases in a folder:
+
 ```
 **/plans/YYYY-MM-DD-feature/
 ├── README.md           # Overview + phase tracking

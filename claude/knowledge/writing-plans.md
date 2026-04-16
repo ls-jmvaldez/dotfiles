@@ -28,6 +28,29 @@ Write step-by-step implementation plans for agentic execution. Each task should 
 - [ ] Criterion 1
 - [ ] Criterion 2
 
+## PR Strategy
+
+**Split:** single PR | stacked PRs | independent PRs
+
+**Rationale:** [One sentence on why this shape was chosen]
+
+**Independence Check** (required if split = independent PRs):
+
+- [ ] Each PR's diff touches zero files edited by another PR in this plan
+- [ ] Each PR's branch passes CI when rebased onto main by itself
+- [ ] Reverting one PR does not break the others
+
+_If any Independence Check box cannot be ticked, downgrade to `stacked PRs`._
+
+## Branch Plan
+
+_Consumed by `/execute` to provision git state. One row per PR in the strategy above._
+
+| # | Branch                     | Worktree Path                      | Base                  |
+| - | -------------------------- | ---------------------------------- | --------------------- |
+| 1 | feat/<TICKET>-<slug>       | .claude/worktrees/<TICKET>-pr1     | main                  |
+| 2 | feat/<TICKET>-<slug2>      | .claude/worktrees/<TICKET>-pr2     | feat/<TICKET>-<slug>  |
+
 ## Context Loading
 
 _Run before starting:_
@@ -37,9 +60,11 @@ read src/relevant/file.ts
 glob src/feature/**/*.ts
 ```
 
-## Tasks
+## Phase 1: [Phase Name]
 
-### Task 1: [Complete Feature Unit]
+_Maps to Branch Plan row 1. For single-PR plans, this is the only phase._
+
+### Task 1.1: [Complete Feature Unit]
 
 **Context:** `src/auth/`, `tests/auth/`
 
@@ -53,7 +78,7 @@ glob src/feature/**/*.ts
 
 ---
 
-### Task 2: [Another Complete Unit]
+### Task 1.2: [Another Complete Unit]
 
 **Context:** `src/billing/`
 
@@ -62,7 +87,21 @@ glob src/feature/**/*.ts
 1. [ ] ...
 
 **Verify:** `npm test -- tests/billing/`
+
+## Phase 2: [Phase Name]
+
+_Maps to Branch Plan row 2. Omit this section entirely if the plan has only one PR._
+
+### Task 2.1: ...
 ````
+
+## Phasing Doctrine
+
+Each phase maps to one PR and one worktree. A well-shaped phase is **mergeable on its own** — it builds, its tests pass, and it delivers a thin slice of user-observable value. Avoid plans where nothing works until every phase lands.
+
+When `split = stacked PRs`, a later phase may depend on an earlier one at the code level (imports, exports) — that is expected and fine. The independence check only applies when you're declaring phases as truly independent.
+
+**Rule of thumb:** If you find yourself writing "Phase 3 is just tests for Phase 2," merge them. Tests belong to the phase that introduces the behavior.
 
 ## Task Sizing
 
@@ -78,31 +117,34 @@ A task includes **everything** to complete one logical unit:
 
 ## Parallelization & Grouping
 
-During execution, tasks are **grouped by subsystem** to share agent context. Structure your plan to make grouping clear:
+Within a phase, tasks can still be grouped by subsystem for parallel agent execution. Use `###` subsystem sub-headings under the `## Phase N:` heading:
 
 ```markdown
-## Authentication Tasks <- These will run in one agent
+## Phase 1: Auth and billing foundations
 
-### Task 1: Add login
+### Authentication subsystem
 
-### Task 2: Add logout
+#### Task 1.1: Add login
 
-## Billing Tasks <- These will run in another agent (parallel)
+#### Task 1.2: Add logout
 
-### Task 3: Add billing API
+### Billing subsystem
 
-### Task 4: Add webhooks
+#### Task 1.3: Add billing API
 
-## Integration Tasks <- Sequential (depends on above)
+#### Task 1.4: Add webhooks
 
-### Task 5: Wire auth + billing
+### Integration (sequential — depends on above)
+
+#### Task 1.5: Wire auth + billing
 ```
 
 **Execution model:**
 
-- Tasks under same `##` heading -> grouped into one agent
-- Groups touching different subsystems -> run in parallel
-- Max 3-4 tasks per group (split larger sections)
+- Phases run sequentially (each maps to a PR boundary)
+- Subsystems within a phase run in parallel agents
+- Tasks within a subsystem run sequentially in one agent
+- Max 3-4 tasks per subsystem group
 
 Tasks in the **same subsystem** should be sequential or combined into one task.
 
