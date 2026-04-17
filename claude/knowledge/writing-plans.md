@@ -10,7 +10,7 @@ Write step-by-step implementation plans for agentic execution. Each task should 
 
 **Clarify ambiguity upfront:** If the plan has unclear requirements or meaningful tradeoffs, ask the user before writing the plan. Present options with descriptions explaining the tradeoffs. Don't guess when the user can clarify in 10 seconds.
 
-**Save to:** `**/plans/YYYY-MM-DD-<feature-name>.md`
+**Save to:** `~/.claude/plans/YYYY-MM-DD-<feature-name>.md`
 
 ## Plan Template
 
@@ -160,7 +160,7 @@ Tasks in the **same subsystem** should be sequential or combined into one task.
 For plans over ~500 lines, split into phases in a folder:
 
 ```
-**/plans/YYYY-MM-DD-feature/
+~/.claude/plans/YYYY-MM-DD-feature/
 +-- README.md           # Overview + phase tracking
 +-- phase-1-setup.md
 +-- phase-2-feature.md

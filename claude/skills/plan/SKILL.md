@@ -56,7 +56,11 @@ Arguments: $ARGUMENTS (Jira key or feature description)
    - Use **stacked PRs** when later phases import from earlier ones or build on shared types introduced mid-plan.
    - Use **independent PRs** only when the Independence Check passes cleanly. If in doubt, use stacked.
 
-7. **Save to** `**/plans/YYYY-MM-DD-<slug>.md`:
+7. **Save to** `~/.claude/plans/YYYY-MM-DD-<slug>.md`:
+
+   Always write to this absolute path, even when invoked from a project repo that
+   contains its own `plans/` or `.opencode/plans/` directory. `/execute` looks here
+   and nowhere else.
 
    - If the source was a Jira key: slug = lowercase ticket key (e.g. `coreapp1-3307`).
    - If free-text: slug = kebab-case of a short feature name.
@@ -76,7 +80,7 @@ Arguments: $ARGUMENTS (Jira key or feature description)
 For plans over ~500 lines, split into phases in a folder:
 
 ```
-**/plans/YYYY-MM-DD-feature/
+~/.claude/plans/YYYY-MM-DD-feature/
 ├── README.md           # Overview + phase tracking
 ├── phase-1-setup.md
 └── phase-2-feature.md
