@@ -1,0 +1,19 @@
+{
+  "name": "Web app migration",
+  "prompt": "Migrate this repo to GitHub Actions. It has a client app alongside the .NET backend.",
+  "expected_behavior": [
+    "Detects target repo via `gh repo view --json nameWithOwner`",
+    "Stops if target org is not LegalShield",
+    "Detects project type as 'web' because package.json is present",
+    "Selects LegalShield/internal-events-web as the reference and reports the default",
+    "Enumerates reference workflows (ci.yml, deploy.yml) via gh api rather than a hardcoded list",
+    "Creates the same two files in target .github/workflows/",
+    "Adapts .csproj paths, client app directory names, and repo URL references",
+    "Creates all environments present in the reference (sandbox, uat, production, production-2)",
+    "Adds reviewer teams as repo collaborators before assigning them as environment reviewers"
+  ],
+  "edge_cases": [
+    "Reference repo has an extra production-2 environment — must not be hardcoded to 3 envs",
+    "Web app may lack a health endpoint — user confirms, skill skips health-check adaptation"
+  ]
+}

@@ -1,11 +1,13 @@
 ---
 name: move-repo-to-gha
-description: Migrate a LegalShield .NET microservice repo to GitHub Actions CI/CD, using an already-migrated LegalShield repo as reference. Creates workflow files, GitHub environments, and configures team reviewers.
+description: Migrate a LegalShield .NET service or web app repo to GitHub Actions CI/CD, using an already-migrated LegalShield repo as reference. Creates workflow files, GitHub environments, and configures team reviewers.
 ---
 
 Migrate the current LegalShield repo's CI/CD to GitHub Actions by copying and adapting workflows from a reference repo that has already been migrated.
 
-This skill is scoped to the `LegalShield` org only.
+This skill is scoped to the `LegalShield` org only. It supports two reference patterns:
+- **.NET service** (reference: `LegalShield/products-answers-service`) — 5 split reusable workflows
+- **Web app** (reference: `LegalShield/internal-events-web`) — 2 monolithic workflows with frontend build
 
 ## Inputs
 
@@ -13,7 +15,7 @@ The user must provide:
 - **Health endpoint URL**: The service's dev health URL (at minimum), so UAT/prod can be derived
 
 The user may optionally provide:
-- **Reference repo**: An already-migrated LegalShield repo (e.g. `LegalShield/some-service`). Defaults to `LegalShield/products-answers-service`.
+- **Reference repo**: An already-migrated LegalShield repo (e.g. `LegalShield/some-service`). If omitted, the skill picks one based on the target repo's project type — see step 0c.
 
 The **target repo** is auto-detected from the current directory. Do not ask the user for it.
 
@@ -30,24 +32,39 @@ This gives `{org}/{repo}`. If the command fails, returns nothing, or `{org}` is 
 
 All subsequent `gh api` calls use the detected `{repo}` under the `LegalShield` org.
 
-## Step 0b: Resolve reference repo
+## Step 0b: Detect project type
+
+Inspect the target repo for frontend markers:
+
+- If `package.json` exists at the repo root OR in an obvious client subdirectory (e.g. `ClientApp/`, `client/`, `web/`): project type is **web**.
+- Otherwise: project type is **service**.
+
+Report the detected type so the user can override on a re-run if it's wrong.
+
+## Step 0c: Resolve reference repo
 
 - If the user passed a reference repo, use it.
-- Otherwise, default to `LegalShield/products-answers-service` and report that the default was used so the user can override on a re-run.
+- Otherwise, map from project type:
+  - **service** → `LegalShield/products-answers-service`
+  - **web** → `LegalShield/internal-events-web`
+
+Report the default that was chosen so the user can override on a re-run.
 
 ## Procedure
 
 ### 1. Gather context from reference repo
 
-Fetch all workflow files from the reference repo:
+List the reference repo's workflows:
 ```bash
-gh api repos/LegalShield/{reference-repo}/contents/.github/workflows/deploy.yml --jq '.content' | base64 -d
-gh api repos/LegalShield/{reference-repo}/contents/.github/workflows/test.yml --jq '.content' | base64 -d
-gh api repos/LegalShield/{reference-repo}/contents/.github/workflows/build.yml --jq '.content' | base64 -d
-gh api repos/LegalShield/{reference-repo}/contents/.github/workflows/pr.yml --jq '.content' | base64 -d
+gh api repos/LegalShield/{reference-repo}/contents/.github/workflows --jq '.[].name'
 ```
 
-If any of these calls fail (404, auth error, etc.), stop and report which file could not be fetched. Do not proceed with a partial workflow set.
+For each file returned, fetch its contents:
+```bash
+gh api repos/LegalShield/{reference-repo}/contents/.github/workflows/{file} --jq '.content' | base64 -d
+```
+
+If any fetch fails (404, auth error, etc.), stop and report which file could not be fetched. Do not proceed with a partial workflow set.
 
 Fetch environment configuration (names, protection rules, reviewers):
 ```bash
@@ -59,9 +76,11 @@ gh api repos/LegalShield/{reference-repo}/environments/{env-name} --jq '{name, p
 ### 2. Inspect target repo
 
 - List existing workflows: `ls .github/workflows/`
-- Check repo structure: existing Dockerfile, global.json, solution file, source directories
 - List existing environments: `gh api repos/LegalShield/{repo}/environments --jq '.environments[] | {name, id}'`
 - List existing team collaborators: `gh api repos/LegalShield/{repo}/teams --jq '.[] | {name, slug, permission}'`
+- Check repo structure based on project type:
+  - **service**: `global.json`, `*.sln`, `*.csproj`, `Dockerfile`, source directories
+  - **web**: `package.json`, lockfile (`pnpm-lock.yaml` / `package-lock.json` / `yarn.lock`), client subdirectory, any server-side `*.csproj`
 
 ### 3. Derive health endpoint URLs
 
@@ -71,24 +90,25 @@ Given a dev URL like `https://{subdomain}.api.dev-legalshield.com/v1/health`, de
 
 Confirm the derived URLs with the user before writing them into any workflow file.
 
+If the target project has no health endpoint (some web apps), confirm with the user and skip the health-check steps during adaptation.
+
 ### 4. Create workflow files
 
-Create these files in `.github/workflows/`, adapted from the reference:
+For each workflow file listed in step 1, create the same filename in the target's `.github/workflows/` with adapted contents. Do not hardcode the filename list — drive it from the reference's directory listing.
 
-**test.yml** — Reusable dotnet test workflow. Usually no adaptation needed.
+Adaptation per file:
 
-**build.yml** — Reusable Docker build workflow. Usually no adaptation needed (uses `github.event.repository.name` dynamically).
+- **Repo-name references**: replace any `LegalShield/{reference-repo}` with `LegalShield/{repo}`
+- **Source-directory paths**: replace reference-repo source dirs (e.g. `ProductsAnswersService/`) with the target repo's actual source dirs
+- **Health check URLs**: substitute derived URLs from step 3
+- **AI summary / copilot prompts**: update application description, `git diff` paths, and PR link URLs
+- **Dynamic references** (e.g. `github.event.repository.name`) need no change
 
-**pr.yml** — PR trigger calling test + build. Usually no adaptation needed.
-
-**deploy.yml** — Full deployment pipeline. Adapt these parts:
-- Health check URLs (step 3 values) in `get-uat-commit` and `get-prod-commit` steps
-- AI summary copilot prompt: update application description, `git diff` source directory paths, and GitHub PR link URLs pointing to the target repo
-- See `references/adaptation-checklist.md` for the full list
+See `references/adaptation-checklist.md` for the full list.
 
 ### 5. Update existing workflows
 
-If `pull-request-helpers.yml` exists, bump `actions/checkout` to v6 to match.
+If `pull-request-helpers.yml` exists in the target repo, bump `actions/checkout` to v6 to match.
 
 ### 6. Add reviewer teams as repo collaborators
 
@@ -101,14 +121,14 @@ gh api orgs/LegalShield/teams/{team-slug}/repos/LegalShield/{repo} -X PUT -f per
 
 ### 7. Create GitHub environments
 
-Create each environment matching the reference repo's configuration:
+For each environment found in the reference repo (step 1), create the matching environment in the target. The set is not fixed — for example, `internal-events-web` has an extra `production-2` environment beyond the standard sandbox/uat/production trio.
 
-**sandbox** (no protection rules):
+**Environments without protection rules** (e.g. sandbox):
 ```bash
-gh api repos/LegalShield/{repo}/environments/sandbox -X PUT --input - <<< '{}'
+gh api repos/LegalShield/{repo}/environments/{env-name} -X PUT --input - <<< '{}'
 ```
 
-**uat** and **production** (with required reviewers):
+**Environments with required reviewers** (e.g. uat, production):
 ```bash
 gh api repos/LegalShield/{repo}/environments/{env-name} -X PUT --input - << EOF
 {

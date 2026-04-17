@@ -1,34 +1,46 @@
 # Adaptation Points When Migrating Workflows
 
-When copying workflows from a reference repo, these are the points that must be adapted per-repo:
+When copying workflows from a reference repo, these are the points that must be adapted per-repo. Specific files depend on the reference pattern in use.
 
-## test.yml
+## .NET service pattern (reference: products-answers-service)
+
+### test.yml
 - No repo-specific changes needed (generic dotnet test)
 
-## build.yml
+### build.yml
 - No repo-specific changes needed (uses `github.event.repository.name` dynamically)
 
-## pr.yml
+### pr.yml
 - No repo-specific changes needed
 
-## deploy.yml
-These require adaptation:
+### deploy.yml
+- Health check URLs in `get-uat-commit` and `get-prod-commit` steps
+- AI summary copilot prompt: application description, `git diff` source-directory paths, GitHub PR link base URL
+- Source-directory names in feature-flag detection (e.g. `ProductsAnswersService/` vs `Products.Answers.Processors/ Products.Answers.Reader/`)
 
-### Health endpoint URLs
-- UAT: `https://<service-subdomain>.api.uat-legalshield.com/v1/health`
-- Production: `https://<service-subdomain>.api.legalshield.com/v1/health`
-- Pattern: replace domain prefix, keep `/v1/health` path
+### pull-request-helpers.yml
+- Bump `actions/checkout` to v6 if not already
 
-### AI summary copilot prompts
-- Application description (e.g. "a .NET API service" vs "a .NET journal reader/processor service")
-- `git diff` paths for feature flag detection (e.g. `ProductsAnswersService/` vs `Products.Answers.Processors/ Products.Answers.Reader/`)
-- GitHub PR link base URL (e.g. `LegalShield/products-answers-service/pull/` vs `LegalShield/products-answers-journal-reader-service/pull/`)
+## Web app pattern (reference: internal-events-web)
+
+### ci.yml
+- Source-directory names: `.csproj` paths, client app directory name
+- `BuildClientApp` toggle and any frontend-specific build paths
+- Secret references that assume a specific project name
+
+### deploy.yml
+- Health check URLs (if the app exposes a health endpoint)
+- AI summary copilot prompt: application description, `git diff` paths, GitHub PR link base URL
+- Environment set — `internal-events-web` has `production-2` in addition to sandbox/uat/production; copy whatever the reference actually has
+- ECR registry reference usually stays the same; confirm it matches the target's AWS account
+
+## Shared across both patterns
+
+### Repo references
+- Replace any `LegalShield/{reference-repo}` URL or path with `LegalShield/{target-repo}`
 
 ### Environment URL patterns
 - dev: `*.api.dev-legalshield.com`
 - sandbox: `*.api.sandbox-legalshield.com`
 - UAT: `*.api.uat-legalshield.com`
 - Production: `*.api.legalshield.com`
-
-## pull-request-helpers.yml
-- Bump `actions/checkout` to v6 if not already
