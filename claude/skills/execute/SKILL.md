@@ -16,7 +16,10 @@ This skill runs in a forked context with Sonnet so planning artifacts authored b
 
 **If `$ARGUMENTS` is a path**: read that plan file.
 
-**If no argument**: find the most recent plan file at `**/plans/*.md` whose status header is `DRAFT`, `APPROVED`, or `IN_PROGRESS`. Skip files in `plans/done/`. If multiple match, pick the newest by mtime and report which one you chose.
+**If no argument**: find the most recent plan file at `~/.claude/plans/*.md` whose status header is `DRAFT`, `APPROVED`, or `IN_PROGRESS`. Skip files in `~/.claude/plans/done/`. If multiple match, pick the newest by mtime and report which one you chose.
+
+Do not search project-local `plans/` or `.opencode/plans/` directories — `/plan` is
+required to save to `~/.claude/plans/`.
 
 If none match, stop and tell the user to create a plan with `/plan`.
 
@@ -86,7 +89,7 @@ After all subsystem groups in a phase finish cleanly:
 After every phase commits and pushes successfully:
 
 1. Flip plan status to `COMPLETED`.
-2. Move the plan file to `plans/done/<same-name>.md`.
+2. Move the plan file to `~/.claude/plans/done/<same-name>.md`.
 3. Report a summary: plan path, list of PR URLs, branch names.
 
 ## Failure handling

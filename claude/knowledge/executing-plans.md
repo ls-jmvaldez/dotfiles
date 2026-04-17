@@ -94,7 +94,7 @@ After all subsystem groups in a phase finish cleanly:
 Once the last phase ships its PR:
 
 - Flip status to `COMPLETED`
-- Move the plan file to `plans/done/<same-name>.md`
+- Move the plan file to `~/.claude/plans/done/<same-name>.md`
 - Summary report: plan path, all PR URLs, all branches
 
 ## Failure Handling
