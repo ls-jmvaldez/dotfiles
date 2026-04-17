@@ -1,0 +1,15 @@
+{
+  "name": "Using a non-default reference repo",
+  "prompt": "Migrate this repo to GHA using LegalShield/products-intake-service as the reference instead of the default",
+  "expected_behavior": [
+    "Detects target repo via `gh repo view --json nameWithOwner`",
+    "Uses the provided reference repo instead of the LegalShield/products-answers-service default",
+    "Fetches workflows from the specified reference repo",
+    "Pulls environment config from the reference repo",
+    "Adapts all repo-specific references (health URLs, source dirs, PR links, copilot prompts)"
+  ],
+  "edge_cases": [
+    "Reference repo may have different environment names or reviewer teams",
+    "Reference repo may not have AI summary steps"
+  ]
+}

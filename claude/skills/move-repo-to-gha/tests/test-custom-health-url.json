@@ -1,0 +1,17 @@
+{
+  "name": "Service with non-standard health URL",
+  "prompt": "Migrate this repo to GHA. Health endpoint is at intakeservice.api.dev-legalshield.com/v1/health",
+  "expected_behavior": [
+    "Detects target repo via `gh repo view --json nameWithOwner`",
+    "Stops if target org is not LegalShield",
+    "Uses LegalShield/products-answers-service as default reference",
+    "Asks user to confirm derived UAT and production health URLs",
+    "Derives UAT URL: intakeservice.api.uat-legalshield.com/v1/health",
+    "Derives production URL: intakeservice.api.legalshield.com/v1/health",
+    "Substitutes URLs into deploy.yml health check steps"
+  ],
+  "edge_cases": [
+    "User may provide dev URL only — must derive uat/prod variants and confirm",
+    "Service may not have a health endpoint at all — skip those steps if user confirms"
+  ]
+}

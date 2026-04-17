@@ -1,0 +1,15 @@
+{
+  "name": "Repo with no existing environments",
+  "prompt": "Migrate this repo to GitHub Actions. It has no environments set up yet.",
+  "expected_behavior": [
+    "Detects target repo via `gh repo view --json nameWithOwner`",
+    "Uses LegalShield/products-answers-service as default reference",
+    "Detects no existing environments (besides possibly copilot)",
+    "Creates all three environments: sandbox, uat, production",
+    "Does not error when environments don't exist yet",
+    "Verifies environments were created with correct protection rules"
+  ],
+  "edge_cases": [
+    "gh api returns 404 for non-existent environments — handle gracefully"
+  ]
+}
