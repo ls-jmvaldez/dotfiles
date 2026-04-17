@@ -11,15 +11,11 @@ This skill is scoped to the `LegalShield` org only. It supports two reference pa
 
 ## Inputs
 
-The user must provide:
-- **Health endpoint URL**: The service's dev health URL (at minimum), so UAT/prod can be derived
-
 The user may optionally provide:
+- **Health endpoint URL**: The service's dev health URL. If omitted, the skill discovers candidate dev URLs from the target repo's config and asks the user to pick the right one — see step 3.
 - **Reference repo**: An already-migrated LegalShield repo (e.g. `LegalShield/some-service`). If omitted, the skill picks one based on the target repo's project type — see step 0c.
 
 The **target repo** is auto-detected from the current directory. Do not ask the user for it.
-
-If the health URL is missing, stop and ask before proceeding.
 
 ## Step 0a: Detect target repo
 
@@ -81,14 +77,27 @@ gh api repos/LegalShield/{reference-repo}/environments/{env-name} --jq '{name, p
 - Check repo structure based on project type:
   - **service**: `global.json`, `*.sln`, `*.csproj`, `Dockerfile`, source directories
   - **web**: `package.json`, lockfile (`pnpm-lock.yaml` / `package-lock.json` / `yarn.lock`), client subdirectory, any server-side `*.csproj`
+- Discover candidate dev URLs from repo config. Search for URLs containing a recognizable dev env-prefix across:
+  - `appsettings*.json` (per-env config — usually the richest source)
+  - `README.md` and any `docs/**/*.md`
+  - `docker-compose*.yml`
+  - `.env.example` / `.env.sample` / `.env.template`
+  - Any legacy CI config being replaced (`.gitlab-ci.yml`, Azure Pipelines yaml, etc.)
 
-### 3. Derive health endpoint URLs
+  Use a pattern like `https?://[^ "'\`<>]*(dev-|dev\.)[^ "'\`<>]+` and deduplicate results.
 
-Given a dev URL like `https://{subdomain}.api.dev-legalshield.com/v1/health`, derive:
-- UAT: `https://{subdomain}.api.uat-legalshield.com/v1/health`
-- Production: `https://{subdomain}.api.legalshield.com/v1/health`
+### 3. Resolve health endpoint URL
 
-Confirm the derived URLs with the user before writing them into any workflow file.
+- If the user provided a health URL, use it as the dev URL.
+- Otherwise, present the candidate dev URLs found in step 2 and ask the user which one is their service's own health URL (not a dependency URL).
+
+Derive UAT and production URLs from the chosen dev URL by substituting the env-prefix segment:
+- `dev-` → `uat-` to produce UAT
+- `dev-` → `` (empty string) to produce production
+
+This substitution works across any LegalShield domain family (`legalshield.com`, `legalshieldinternal.com`, `shield-service.com`, `legalshieldproviders.com`, etc.) because only the env-prefix varies between environments.
+
+Confirm the derived UAT and production URLs with the user before writing them into any workflow file.
 
 If the target project has no health endpoint (some web apps), confirm with the user and skip the health-check steps during adaptation.
 

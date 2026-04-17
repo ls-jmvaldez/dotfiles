@@ -39,8 +39,22 @@ When copying workflows from a reference repo, these are the points that must be 
 ### Repo references
 - Replace any `LegalShield/{reference-repo}` URL or path with `LegalShield/{target-repo}`
 
-### Environment URL patterns
-- dev: `*.api.dev-legalshield.com`
-- sandbox: `*.api.sandbox-legalshield.com`
-- UAT: `*.api.uat-legalshield.com`
-- Production: `*.api.legalshield.com`
+### Environment URL derivation
+
+Derive UAT and production URLs from the dev URL by substituting only the env-prefix segment:
+- `dev-` → `uat-` for UAT
+- `dev-` → `` (empty) for production
+
+The subdomain, optional `.api.` segment, and base TLD stay as-is. This works across every LegalShield domain family without needing a lookup.
+
+### Known domain families in the org (reference only, non-exhaustive)
+
+- `*.api.{env-prefix}legalshield.com` — canonical public API
+- `*.api.{env-prefix}legalshieldinternal.com` — internal API
+- `*.{env-prefix}legalshieldinternal.com` — internal, no `.api.` segment
+- `*.api.{env-prefix}shield-service.com` — shield-service platform
+- `*.reader.{env-prefix}shield-service.com` — reader services
+- `*.{env-prefix}legalshieldproviders.com` — providers-facing
+- `*.{env-prefix}legalshield.com` — public, no `.api.` segment
+
+New families work automatically because the skill uses substitution, not a lookup.
