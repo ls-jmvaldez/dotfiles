@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 # PostToolUse hook: appends Claude Ocodius attribution to inline PR review comments
-# created via `gh api` POST calls. Covers both:
-#   - top-level review comments:  /repos/{o}/{r}/pulls/{n}/comments
-#   - review comment replies:     /repos/{o}/{r}/pulls/{n}/comments/{id}/replies
+# created or edited via `gh api` calls. Covers:
+#   - top-level review comments:    POST /repos/{o}/{r}/pulls/{n}/comments
+#   - review comment replies:       POST /repos/{o}/{r}/pulls/{n}/comments/{id}/replies
+#   - review comment edits:         PATCH /repos/{o}/{r}/pulls/comments/{id}
 # Does NOT rely on the body being present in the tool_response (e.g. when
 # the caller used --jq to filter the response). Body is fetched fresh via API.
 
 INPUT=$(cat)
 CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
-# Must be a gh api call targeting the PR review-comments path (top-level or replies).
-if ! echo "$CMD" | grep -qE 'gh api[^|;&]*repos/[^/ ]+/[^/ ]+/pulls/[0-9]+/comments(/[0-9]+/replies)?'; then
+# Must be a gh api call targeting a PR review-comment path (create, reply, or edit).
+if ! echo "$CMD" | grep -qE 'gh api[^|;&]*repos/[^/ ]+/[^/ ]+/pulls/([0-9]+/comments(/[0-9]+/replies)?|comments/[0-9]+)'; then
   exit 0
 fi
 
-# Must be a POST (create). Default gh api method is POST when a body field is set.
-if ! echo "$CMD" | grep -qE '(-X ?POST|--method POST|(-f|-F|--field|--raw-field) +body=)'; then
+# Must be a write. POST creates; PATCH edits. Default gh api method is POST when a body
+# field is set, so a bare `-f body=` without an explicit method also counts as a write.
+if ! echo "$CMD" | grep -qE '(-X ?POST|--method POST|-X ?PATCH|--method PATCH|(-f|-F|--field|--raw-field) +body=)'; then
   exit 0
 fi
 
