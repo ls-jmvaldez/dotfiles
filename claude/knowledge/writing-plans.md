@@ -10,7 +10,7 @@ Write step-by-step implementation plans for agentic execution. Each task should 
 
 **Clarify ambiguity upfront:** If the plan has unclear requirements or meaningful tradeoffs, ask the user before writing the plan. Present options with descriptions explaining the tradeoffs. Don't guess when the user can clarify in 10 seconds.
 
-**Save to:** `**/plans/YYYY-MM-DD-<feature-name>.md`
+**Save to:** `~/.claude/plans/YYYY-MM-DD-<feature-name>.md`
 
 ## Plan Template
 
@@ -154,6 +154,7 @@ Tasks in the **same subsystem** should be sequential or combined into one task.
 2. **Context per task:** List files the agent should read first
 3. **Verify every task:** End with a command that proves it works
 4. **One agent per task:** All steps in a task are handled by the same agent
+5. **Wrap prose at 100 columns:** Hard-wrap paragraphs, bullets, and numbered list items to 100 columns so plans are readable in neovim without horizontal scroll. Do NOT wrap inside fenced code blocks (```) or markdown tables — wrapping breaks both. Long URLs and inline code spans may exceed 100 columns when wrapping would split them; that's fine. Re-wrap when editing existing plans, not just on initial authoring.
 
 ## Large Plans
 

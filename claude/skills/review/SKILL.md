@@ -30,7 +30,8 @@ When `$ARGUMENTS` contains `--deep`:
 3. Re-invoke the `code-reviewer` agent with `model: opus[1m]` scoped to only those files, prompt: "deep re-review of the following files, using the same filter rules."
 4. Merge any net-new findings from the Opus pass under a `## Deep Review Additions` section. Do not duplicate findings already reported.
 
-Default model is `sonnet`. `--deep` is experimental — the Opus-vs-Sonnet value on top of already-filtered Sonnet findings is unverified. Use it when stakes are high (security-critical change, high-visibility feature) and skip it otherwise.
+Default model is `sonnet`. `--deep` is experimental — the Opus-vs-Sonnet value on top of already-filtered Sonnet findings is unverified.
+Use it when stakes are high (security-critical change, high-visibility feature) and skip it otherwise.
 
 ## Review covers
 
@@ -41,6 +42,7 @@ Default model is `sonnet`. `--deep` is experimental — the Opus-vs-Sonnet value
 
 ## Output format
 
-Structured review with Critical Issues, Important Issues, Product/UX Issues, DX Issues, Documentation Updates, Suggestions, a final Verdict (APPROVE or REQUEST CHANGES), a **Manual Test Steps** section (numbered user-observable behaviors to verify), and a **Run Locally** block (paste-ready `cd <worktree> && <start-cmd>` derived from project CLAUDE.md).
+Structured review with Critical Issues, Important Issues, Product/UX Issues, DX Issues, Documentation Updates, Suggestions, a final Verdict (APPROVE or REQUEST CHANGES),
+a **Manual Test Steps** section (numbered user-observable behaviors to verify), and a **Run Locally** block (paste-ready `cd <worktree> && <start-cmd>` derived from project CLAUDE.md).
 
 The Manual Test Steps and Run Locally sections are mandatory unless the change has zero user-visible surface — in which case the Manual Test Steps section should explicitly say so.
