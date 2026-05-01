@@ -46,18 +46,19 @@
       "Bash(find:*)",
       "Bash(tree:*)",
       "Bash(basename:*)",
-      "Bash(dirname:*)"
+      "Bash(dirname:*)",
+      "Bash(ln:*)"
     ],
     "deny": [
       "Read(.env)",
-      "Read(.env.*)",
       "Read(.envrc)",
       "Read(credentials.json)",
       "Read(.credentials.json)",
       "Read(**/*.pem)",
       "Read(**/*.key)",
       "Read(settings.local.json)"
-    ]
+    ],
+    "defaultMode": "auto"
   },
   "model": "opus[1m]",
   "hooks": {
@@ -79,6 +80,11 @@
             "type": "command",
             "command": "bash ~/.claude/hooks/worktree-conflict.sh",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/pr-text-style.sh",
+            "timeout": 5
           }
         ]
       }
@@ -116,6 +122,11 @@
             "type": "command",
             "command": "bash ~/.claude/hooks/pr-ai-attribution.sh",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/worktree-env-symlink.sh",
+            "timeout": 15
           }
         ]
       }
@@ -124,5 +135,6 @@
   "statusLine": {
     "type": "command",
     "command": "bash ~/.claude/statusline-command.sh"
-  }
+  },
+  "skipAutoPermissionPrompt": true
 }
