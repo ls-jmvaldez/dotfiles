@@ -71,6 +71,29 @@ Omit the `assignee` field when creating issues unless the user explicitly reques
 
 Every issue created by or with AI assistance MUST include the labels `AI` and `AI_Created`. These labels are already established in COREAPP1 and should be applied to all projects. Add them to the `labels` array in the issue creation payload alongside any other labels.
 
+### Inherit CAPEX from the parent epic
+
+CAPEX classification cascades down the hierarchy. Before creating a story under an epic (or a subtask under a story), read the parent's `customfield_11317` value and propagate it to the new issue. Finance reporting depends on every child of a CAPEX epic also being marked CAPEX, and missing values get caught in audit later.
+
+```bash
+# Read the epic's CAPEX value, then create the story with it set
+EPIC_KEY="COREAPP1-3116"
+CAPEX=$(curl -s \
+  -H "Authorization: Basic ${JIRA_AUTH_TOKEN}" \
+  "https://legalshield.atlassian.net/rest/api/3/issue/${EPIC_KEY}?fields=customfield_11317" \
+  | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+v = d.get('fields', {}).get('customfield_11317')
+print(v[0]['value'] if v else '')")
+
+# CAPEX is now 'YES', 'NO', or '' (unset)
+```
+
+If the epic's CAPEX value is unset, create the story without the field rather than guessing. Surface the gap to the user so they can decide.
+
+For subtasks, read CAPEX from the parent story (which already inherited from the epic) and propagate it the same way.
+
 ### Workflow: plan one story at a time
 
 Present the story summary and subtask list to the user for review before creating anything via the API. Wait for explicit approval. Corrections before creation are cheap. Rework after creation is not.
@@ -175,6 +198,7 @@ These custom field IDs are the same across all projects on this Jira instance:
 | Story Point Estimate | `customfield_11240` | Numeric                                           |
 | Fibonacci Points     | `customfield_11348` | Numeric (alternative)                             |
 | Epic Name            | `customfield_10120` | Only for creating epics                           |
+| Issue is CAPEX?      | `customfield_11317` | Array of option. Allowed: `YES`, `NO`. Set as `[{"value": "YES"}]` |
 
 ---
 
@@ -348,7 +372,7 @@ Common JQL patterns:
 
 ### 3. Create Story (under an Epic)
 
-Stories are linked to epics via BOTH `customfield_10118` (Epic Link) AND `parent` (hierarchy).
+Stories are linked to epics via BOTH `customfield_10118` (Epic Link) AND `parent` (hierarchy). Inherit `customfield_11317` (Issue is CAPEX?) from the epic — see the authoring guidelines above.
 
 ```bash
 curl -s \
@@ -373,7 +397,8 @@ curl -s \
       },
       "customfield_10118": "COREAPP1-3116",
       "parent": {"key": "COREAPP1-3116"},
-      "customfield_11240": 5
+      "customfield_11240": 5,
+      "customfield_11317": [{"value": "YES"}]
     }
   }'
 ```
@@ -382,7 +407,7 @@ curl -s \
 
 ### 4. Create Sub-task (under a Story)
 
-Sub-tasks use `parent` to link to their parent Story. Do NOT set `customfield_10118` on sub-tasks.
+Sub-tasks use `parent` to link to their parent Story. Do NOT set `customfield_10118` on sub-tasks. Inherit `customfield_11317` (Issue is CAPEX?) from the parent story.
 
 ```bash
 curl -s \
@@ -405,7 +430,8 @@ curl -s \
           }
         ]
       },
-      "parent": {"key": "COREAPP1-XXXX"}
+      "parent": {"key": "COREAPP1-XXXX"},
+      "customfield_11317": [{"value": "YES"}]
     }
   }'
 ```
