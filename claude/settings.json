@@ -136,5 +136,16 @@
     "type": "command",
     "command": "bash ~/.claude/statusline-command.sh"
   },
-  "skipAutoPermissionPrompt": true
+  "extraKnownMarketplaces": {
+    "legalshield-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "Legalshield/legalshield-claude-marketplace"
+      }
+    }
+  },
+  "skipAutoPermissionPrompt": true,
+  "enabledPlugins": {
+    "session-review@legalshield-marketplace": true
+  }
 }
