@@ -102,6 +102,16 @@ Before writing a story's description, read the actual source files that story wi
 
 ---
 
+## Default Read Policy
+
+Whenever a workflow reads a Jira issue for context (this skill, the `/plan` skill, ad-hoc "look up COREAPP1-XXXX" requests, etc.), pull comments and attachments alongside the issue fields. They are part of the spec, not optional extras.
+
+- Always include `comment` and `attachment` in the `fields` list on `Get Issue Details`.
+- Auto-download attachments per the policy in **Read Attachments**: text-like files inline as context, images saved to a temp dir for multimodal Read, large binaries listed but not pulled.
+- When the comment thread is long, summarize chronologically (author + date + key point) rather than dumping every body verbatim.
+
+This is the default. The only time to skip is when the user explicitly says "ignore comments/attachments" or when the operation is a pure write that doesn't need context (e.g. `Add to Sprint`).
+
 ## Authentication
 
 All requests require a base64-encoded `email:api-token` string for authentication.
@@ -482,12 +492,101 @@ curl -s \
 
 ### 7. Get Issue Details
 
+**CRITICAL:** When you pass an explicit `fields=` list, Jira returns ONLY those fields — anything not listed is silently dropped from the response. The most common failure mode is omitting `description` and then reporting "description is empty" when in fact the body is full. Always include the full default field list below unless you have a reason to slim it down.
+
+Default reads MUST include at minimum: `summary,status,assignee,reporter,priority,issuetype,description,parent,subtasks,issuelinks,comment,attachment,labels,created,updated,fixVersions,components,duedate` plus the standard custom fields (`customfield_10118` Epic Link, `customfield_11240` Story Points, `customfield_11317` CAPEX, `customfield_10122` Sprint). `comment` and `attachment` are especially load-bearing — they often carry clarifications, screenshots, error logs, and design refs that the description leaves out.
+
 ```bash
 curl -s \
   -H "Authorization: Basic ${JIRA_AUTH_TOKEN}" \
   -H "Content-Type: application/json" \
-  "https://legalshield.atlassian.net/rest/api/3/issue/COREAPP1-XXXX?fields=summary,status,assignee,parent,subtasks,customfield_10118,customfield_11240"
+  "https://legalshield.atlassian.net/rest/api/3/issue/COREAPP1-XXXX?fields=summary,status,assignee,reporter,priority,issuetype,description,parent,subtasks,issuelinks,comment,attachment,labels,created,updated,fixVersions,components,duedate,customfield_10118,customfield_11240,customfield_11317,customfield_10122"
 ```
+
+The response includes:
+
+- `fields.description` — ADF document. Render with the canonical `adf_to_text` renderer below; do NOT roll your own per-call, because partial renderers drop code spans, inline cards, media nodes, and tables silently.
+- `fields.comment.comments[]` — array of comments with `author.displayName`, `created`, `body` (ADF). Render the body to plain text before using it as context.
+- `fields.attachment[]` — array with `filename`, `mimeType`, `size`, `created`, `content` (download URL), `author.displayName`.
+- `fields.issuelinks[]` — relations (`blocks`, `is blocked by`, `relates to`, `duplicates`). Each entry has `type.inward`/`type.outward` and either `inwardIssue` or `outwardIssue` with `key` and `fields.summary`.
+
+#### Canonical ADF renderer
+
+Use this renderer for every ADF body (description, comments). It handles the node and mark types this instance actually emits — extend it here if you hit a new one rather than patching a copy in a one-off script.
+
+```python
+def adf_to_text(node):
+    if not isinstance(node, dict):
+        return ''
+    t = node.get('type')
+    if t == 'text':
+        text = node.get('text', '')
+        for m in node.get('marks', []) or []:
+            mt = m.get('type')
+            if mt == 'code':
+                text = f'`{text}`'
+            elif mt == 'strong':
+                text = f'**{text}**'
+            elif mt == 'em':
+                text = f'*{text}*'
+            elif mt == 'strike':
+                text = f'~~{text}~~'
+            elif mt == 'link':
+                href = (m.get('attrs') or {}).get('href', '')
+                text = f'[{text}]({href})'
+        return text
+    if t == 'hardBreak':
+        return '\n'
+    if t == 'rule':
+        return '\n---\n'
+    if t == 'mention':
+        return '@' + ((node.get('attrs') or {}).get('text') or (node.get('attrs') or {}).get('id') or '')
+    if t == 'emoji':
+        return (node.get('attrs') or {}).get('shortName', '')
+    if t == 'inlineCard':
+        return (node.get('attrs') or {}).get('url', '')
+    if t == 'media':
+        a = node.get('attrs') or {}
+        return f"[media: {a.get('alt') or a.get('id') or 'attachment'}]"
+    if t in ('mediaSingle', 'mediaGroup'):
+        return ''.join(adf_to_text(c) for c in node.get('content', [])) + '\n'
+    if t == 'codeBlock':
+        lang = (node.get('attrs') or {}).get('language', '')
+        body = ''.join(adf_to_text(c) for c in node.get('content', []))
+        return f'\n```{lang}\n{body}\n```\n'
+    if t == 'panel':
+        kind = (node.get('attrs') or {}).get('panelType', 'info')
+        body = ''.join(adf_to_text(c) for c in node.get('content', []))
+        return f'\n[{kind.upper()}] {body}\n'
+    if t == 'blockquote':
+        body = ''.join(adf_to_text(c) for c in node.get('content', []))
+        return '\n'.join('> ' + line for line in body.splitlines()) + '\n'
+    if t == 'heading':
+        level = (node.get('attrs') or {}).get('level', 3)
+        return '\n' + ('#' * level) + ' ' + ''.join(adf_to_text(c) for c in node.get('content', [])) + '\n'
+    if t == 'paragraph':
+        return ''.join(adf_to_text(c) for c in node.get('content', [])) + '\n'
+    if t == 'listItem':
+        return ''.join(adf_to_text(c) for c in node.get('content', []))
+    if t == 'bulletList':
+        return ''.join('- ' + adf_to_text(c) for c in node.get('content', []))
+    if t == 'orderedList':
+        return ''.join(f'{i+1}. ' + adf_to_text(c) for i, c in enumerate(node.get('content', [])))
+    if t == 'taskList':
+        out = []
+        for item in node.get('content', []):
+            state = (item.get('attrs') or {}).get('state', 'TODO')
+            mark = '[x]' if state == 'DONE' else '[ ]'
+            out.append(f'{mark} ' + ''.join(adf_to_text(c) for c in item.get('content', [])))
+        return '\n'.join(out) + '\n'
+    if t in ('table', 'tableRow', 'tableHeader', 'tableCell'):
+        sep = ' | ' if t == 'tableRow' else ''
+        return sep.join(adf_to_text(c) for c in node.get('content', [])) + ('\n' if t == 'tableRow' else '')
+    # doc and any unknown container — walk children
+    return ''.join(adf_to_text(c) for c in node.get('content', []))
+```
+
+See **Read Comments** and **Read Attachments** below for follow-up workflows when there are many comments or you need the actual file contents.
 
 ### 8. Transition Issue (Change Status)
 
@@ -571,7 +670,92 @@ curl -s \
   }'
 ```
 
-### 13. Add Labels
+### 13. Read Comments
+
+Use this when an issue has many comments and you only want the comment thread (without re-fetching the whole issue), or when you need to paginate. The endpoint returns ADF bodies; flatten to text before passing as context.
+
+```bash
+curl -s \
+  -H "Authorization: Basic ${JIRA_AUTH_TOKEN}" \
+  -H "Content-Type: application/json" \
+  "https://legalshield.atlassian.net/rest/api/3/issue/COREAPP1-XXXX/comment?orderBy=created&maxResults=100" \
+  | python3 -c "
+import json, sys
+# Use the canonical adf_to_text renderer from 'Get Issue Details' above.
+# Importing inline here for the example; in real scripts, source it once.
+def adf_to_text(node):
+    if not isinstance(node, dict): return ''
+    t = node.get('type')
+    if t == 'text':
+        text = node.get('text', '')
+        for m in node.get('marks', []) or []:
+            mt = m.get('type')
+            if mt == 'code': text = f'\`{text}\`'
+            elif mt == 'strong': text = f'**{text}**'
+            elif mt == 'em': text = f'*{text}*'
+            elif mt == 'link':
+                href = (m.get('attrs') or {}).get('href', '')
+                text = f'[{text}]({href})'
+        return text
+    if t == 'hardBreak': return '\n'
+    if t in ('paragraph','heading','listItem'):
+        return ''.join(adf_to_text(c) for c in node.get('content', [])) + '\n'
+    if t == 'bulletList':
+        return ''.join('- ' + adf_to_text(c) for c in node.get('content', []))
+    if t == 'orderedList':
+        return ''.join(f'{i+1}. ' + adf_to_text(c) for i,c in enumerate(node.get('content', [])))
+    return ''.join(adf_to_text(c) for c in node.get('content', []))
+d = json.load(sys.stdin)
+for c in d.get('comments', []):
+    author = c.get('author', {}).get('displayName', '?')
+    created = c.get('created', '')[:19]
+    body = adf_to_text(c.get('body', {})).strip()
+    print(f'--- {author} @ {created} ---')
+    print(body)
+    print()
+"
+```
+
+### 14. Read Attachments
+
+The issue's `attachment[]` array gives you `filename`, `mimeType`, `size`, and `content` (an authenticated download URL). Download with `curl -L` and the same auth header.
+
+**Default download policy** (apply automatically when loading ticket context):
+
+| MIME / extension | Action |
+| --- | --- |
+| `text/*`, `application/json`, `.md`, `.txt`, `.csv`, `.log`, `.yaml`, `.yml` | Download and inline the contents as context. |
+| `image/*` | Download to a temp dir; surface the path so the multimodal Read tool can ingest it. |
+| `application/pdf` | Download to temp dir; only Read pages on demand (use `pages: "1-5"` etc). |
+| Video, archive, binary | List filename + size only; do not download unless the user asks. |
+
+```bash
+# Resolve a stable temp dir for this ticket's assets
+TICKET=COREAPP1-XXXX
+ASSET_DIR="${TMPDIR:-/tmp}/jira-assets/${TICKET}"
+mkdir -p "$ASSET_DIR"
+
+# Pull the attachment list off the issue payload (already in the default GET above)
+curl -s \
+  -H "Authorization: Basic ${JIRA_AUTH_TOKEN}" \
+  "https://legalshield.atlassian.net/rest/api/3/issue/${TICKET}?fields=attachment" \
+  | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+for a in d.get('fields', {}).get('attachment', []):
+    print(f\"{a['id']}\t{a['mimeType']}\t{a['size']}\t{a['filename']}\t{a['content']}\")
+"
+
+# Download a specific attachment by content URL
+curl -sL \
+  -H "Authorization: Basic ${JIRA_AUTH_TOKEN}" \
+  -o "$ASSET_DIR/<filename>" \
+  "<content URL from above>"
+```
+
+After downloading, report the saved paths so subsequent steps (or the Read tool) can pick them up. Skip files larger than ~10 MB unless the user explicitly asks for them.
+
+### 15. Add Labels
 
 ```bash
 curl -s \
@@ -811,16 +995,18 @@ fi
 
 ## Quick Reference
 
-| Action        | Method | Endpoint                              |
-| ------------- | ------ | ------------------------------------- | --- |
-| Search        | POST   | `/rest/api/3/search/jql`              |
-| Create issue  | POST   | `/rest/api/3/issue`                   |
-| Get issue     | GET    | `/rest/api/3/issue/{key}`             |
-| Update issue  | PUT    | `/rest/api/3/issue/{key}`             |
-| Delete issue  | DELETE | `/rest/api/3/issue/{key}`             |
-| Transitions   | GET    | `/rest/api/3/issue/{key}/transitions` | :   |
-| Do transition | POST   | `/rest/api/3/issue/{key}/transitions` |
-| Add comment   | POST   | `/rest/api/3/issue/{key}/comment`     |
-| Add to sprint | POST   | `/rest/agile/1.0/sprint/{id}/issue`   |
-| List sprints  | GET    | `/rest/agile/1.0/board/544/sprint`    |
-| My info       | GET    | `/rest/api/3/myself`                  |
+| Action            | Method | Endpoint                                |
+| ----------------- | ------ | --------------------------------------- |
+| Search            | POST   | `/rest/api/3/search/jql`                |
+| Create issue      | POST   | `/rest/api/3/issue`                     |
+| Get issue         | GET    | `/rest/api/3/issue/{key}` (always include `comment,attachment` in `fields`) |
+| Update issue      | PUT    | `/rest/api/3/issue/{key}`               |
+| Delete issue      | DELETE | `/rest/api/3/issue/{key}`               |
+| Transitions       | GET    | `/rest/api/3/issue/{key}/transitions`   |
+| Do transition     | POST   | `/rest/api/3/issue/{key}/transitions`   |
+| Add comment       | POST   | `/rest/api/3/issue/{key}/comment`       |
+| Read comments     | GET    | `/rest/api/3/issue/{key}/comment`       |
+| Read attachments  | GET    | follow `attachment[].content` URL with `curl -L` |
+| Add to sprint     | POST   | `/rest/agile/1.0/sprint/{id}/issue`     |
+| List sprints      | GET    | `/rest/agile/1.0/board/544/sprint`      |
+| My info           | GET    | `/rest/api/3/myself`                    |
