@@ -23,16 +23,31 @@ Arguments: $ARGUMENTS (Jira key or feature description)
      model: haiku
      description: Load Jira ticket context
      prompt: |
-       Fetch Jira ticket <KEY> and return a compact context block. Use the pattern in
-       ~/.claude/knowledge/jira/jira.md for authentication and the `Get Issue Details`
-       endpoint. Return:
+       Fetch Jira ticket <KEY> and return a context block. Use the pattern in
+       ~/.claude/knowledge/jira/jira.md for authentication, follow the "Default Read
+       Policy" section, and use the `Get Issue Details` endpoint with
+       `fields=summary,status,assignee,parent,subtasks,comment,attachment,customfield_10118,customfield_11240,issuelinks`.
+
+       Return:
          - Title
          - Description (raw text, not ADF)
          - Acceptance criteria (if present)
          - Parent epic key and title
          - Linked issues (blocked by / blocks / relates)
          - Current status
-       Keep the block under 400 words. Do not speculate — if a field is empty, say "(none)".
+         - **Comments**: chronological list of `author @ YYYY-MM-DD: <one-line gist>`.
+           Flatten ADF bodies to plain text. If a comment carries a decision, edge case,
+           or clarification not in the description, expand it to 1–2 sentences.
+         - **Attachments**: for each, list `filename (mimeType, size)` plus a one-line
+           summary of why it matters. Auto-download per the policy in
+           ~/.claude/knowledge/jira/jira.md → "Read Attachments":
+             - text-like files: inline contents (truncate to ~80 lines if long)
+             - images: save to `${TMPDIR:-/tmp}/jira-assets/<KEY>/` and report the path
+               so the parent agent can Read them with the multimodal tool
+             - large binaries / video: list metadata only
+
+       Keep prose under 600 words; attachment file contents and image paths are exempt
+       from that budget. Do not speculate — if a field is empty, say "(none)".
      ```
 
      Wait for the subagent to return. Use its output as the authoritative source for the plan's Specification section.
