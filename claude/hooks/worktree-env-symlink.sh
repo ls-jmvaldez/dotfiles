@@ -3,8 +3,10 @@
 # from the main repo into the new worktree so dev servers pick them up.
 # Never blocks — logs to stderr on success/issues.
 #
-# Covered env filenames: .env, .env.local, .env.development.local,
-# .env.production.local, .env.test.local, .envrc
+# Covered patterns: any file matching `.env*` (e.g. .env, .env.local,
+# .env.development.local, .env.dev.local, .env.uat.local, .env.prod.local)
+# plus .envrc. Example/sample/template suffixes are skipped since those
+# are committed and would already exist in the worktree via git.
 #
 # Bypass: include "# no-env-symlink" in the git worktree add command.
 
@@ -80,7 +82,7 @@ while IFS= read -r -d '' src; do
 done < <(find "$MAIN_REPO" \
   \( -path "*/node_modules" -o -path "*/.next" -o -path "*/.claude/worktrees" -o -path "*/dist" -o -path "*/.git" \) -prune \
   -o -type f \
-  \( -name ".env" -o -name ".env.local" -o -name ".env.development.local" -o -name ".env.production.local" -o -name ".env.test.local" -o -name ".envrc" \) \
+  \( \( -name ".env*" ! -name "*.example" ! -name "*.sample" ! -name "*.template" \) -o -name ".envrc" \) \
   -print0 2>/dev/null)
 
 if [ "$LINKED" -gt 0 ]; then
