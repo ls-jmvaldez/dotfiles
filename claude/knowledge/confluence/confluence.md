@@ -38,6 +38,7 @@ Why not `curl -u "$EMAIL:$TOKEN"`? Because our token is already encoded; passing
 
 | Key | Name | Space ID | Notes |
 |-----|------|----------|-------|
+| `~61b7a02191c049006fa846ee` | Joe Valdez (personal) | `2712174601` | **Default target for `create` when no other space is specified.** |
 | `CP` | PIE-T Internal Tools | `851706832` | Release-notes hub. Releases parent page: `5353013302`. |
 | `NPI` | Nothin' but NetWork | `3015671816` | Projects parent: `3549233181`. Postmortems parent: `3777331207`. |
 | `PT` | Platform Team | — | Postmortem Summary 2025 page: `4119625778`. |
