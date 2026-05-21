@@ -67,26 +67,21 @@ Example: `int-membership-details: Shared Foundations`
 
 Omit the `assignee` field when creating issues unless the user explicitly requests assignment.
 
-### Default sprint and epic linkage on creation
+### Default sprint and epic linkage on creation (COREAPP1 only)
 
-When creating any new issue (story, subtask, bug, task) and the user has not named a specific sprint, drop it into the project's staging sprint and link it to the supplied epic. This keeps fresh work grouped in one place instead of scattering across the backlog, and guarantees every item is reachable from its epic without a manual edit pass later.
+When creating a new issue in **COREAPP1** and the user has not named a specific sprint, drop it into sprint `4176` ("Ready for Sprint") and link it to the supplied epic. This keeps fresh COREAPP1 work grouped in one staging sprint instead of scattering across the backlog, and guarantees every item is reachable from its epic without a manual edit pass later.
 
-Apply per project:
+For stories under an epic, set:
 
-| Project   | Default sprint ID | Sprint name        |
-| --------- | ----------------- | ------------------ |
-| COREAPP1  | `4176`            | Ready for Sprint   |
-| OPSUC     | _none_            | (no staging sprint configured; create in backlog) |
-
-For stories under an epic, set both:
-
-- `customfield_10122` = staging sprint ID (e.g. `4176` for COREAPP1)
+- `customfield_10122` = `4176`
 - `customfield_10118` = epic key (Epic Link)
 - `parent` = `{"key": "<epic key>"}`
 
-For subtasks, inherit `customfield_10122` from the parent story (which already has the staging sprint set) and use `parent` to link to that story — do not set `customfield_10118` on subtasks.
+For subtasks, inherit `customfield_10122` from the parent story and use `parent` to link to that story — do not set `customfield_10118` on subtasks.
 
-Skip this default only when the user explicitly names a different sprint or says "backlog only." If a project has no staging sprint configured in the table above, surface that to the user and ask where the issue should land.
+Skip this default only when the user explicitly names a different sprint or says "backlog only."
+
+This rule does **not** apply to other projects (OPSUC, etc.). For non-COREAPP1 work, omit the sprint field unless the user specifies one.
 
 ### Label AI-created tickets
 
