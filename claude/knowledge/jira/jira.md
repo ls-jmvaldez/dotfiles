@@ -67,6 +67,27 @@ Example: `int-membership-details: Shared Foundations`
 
 Omit the `assignee` field when creating issues unless the user explicitly requests assignment.
 
+### Default sprint and epic linkage on creation
+
+When creating any new issue (story, subtask, bug, task) and the user has not named a specific sprint, drop it into the project's staging sprint and link it to the supplied epic. This keeps fresh work grouped in one place instead of scattering across the backlog, and guarantees every item is reachable from its epic without a manual edit pass later.
+
+Apply per project:
+
+| Project   | Default sprint ID | Sprint name        |
+| --------- | ----------------- | ------------------ |
+| COREAPP1  | `4176`            | Ready for Sprint   |
+| OPSUC     | _none_            | (no staging sprint configured; create in backlog) |
+
+For stories under an epic, set both:
+
+- `customfield_10122` = staging sprint ID (e.g. `4176` for COREAPP1)
+- `customfield_10118` = epic key (Epic Link)
+- `parent` = `{"key": "<epic key>"}`
+
+For subtasks, inherit `customfield_10122` from the parent story (which already has the staging sprint set) and use `parent` to link to that story — do not set `customfield_10118` on subtasks.
+
+Skip this default only when the user explicitly names a different sprint or says "backlog only." If a project has no staging sprint configured in the table above, surface that to the user and ask where the issue should land.
+
 ### Label AI-created tickets
 
 Every issue created by or with AI assistance MUST include the labels `AI` and `AI_Created`. These labels are already established in COREAPP1 and should be applied to all projects. Add them to the `labels` array in the issue creation payload alongside any other labels.
