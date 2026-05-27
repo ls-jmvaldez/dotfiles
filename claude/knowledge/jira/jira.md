@@ -45,6 +45,60 @@ The engineer decides how to implement it. The ticket defines what and why.
 Each subtask's acceptance criteria should include testing for that subtask's work. Do not create a standalone "write tests" subtask at the end.
 Testing disconnected from the work it validates is easy to skip and hard to scope.
 
+### Write acceptance criteria for QA
+
+AC is read by QA testers, not the implementer. Write each AC as an executable scenario in Gherkin style (Given / When / Then). A tester unfamiliar with the code should be able to follow the steps in the app without asking questions.
+
+**Format:**
+
+```
+Scenario: <short descriptive name>
+Given <precondition: user role, data state, page>
+When <action — click, type, navigate>
+Then <observable outcome — what they see or can/can't do>
+```
+
+Chain additional steps with `And`. Reference UI elements by their visible label (`Click "Save"`), not component or class name. Provide exact test data inline (`Enter "405-555-0100"`, not "enter a valid phone").
+
+Cover at least one negative path per story (validation, error, permission denied), not just the happy path.
+
+**Scope: test the delta, not the product.** AC covers what this ticket adds or changes. The following are part of QA's standing coverage on every change and should NOT be restated as AC unless the ticket explicitly modifies them:
+
+- Accessibility (keyboard nav, screen reader, color contrast)
+- Cross-browser rendering
+- Mobile and responsive breakpoints
+- Performance and load times
+- Analytics event firing
+- Localization and copy length in other languages
+- Standard auth/session edge cases (unless the ticket touches auth)
+
+Scoping test: would this scenario fail *because of this ticket's changes specifically*, or would it apply to dozens of unrelated tickets? If the latter, it's standing coverage. Leave it out.
+
+If a story does need one of those areas tested explicitly (e.g., a ticket specifically about fixing keyboard nav), write it as a normal scenario like any other. No special section, no callout, just add it.
+
+**Example — story that adds a "Manage Plan" link to the account dropdown:**
+
+```
+Scenario: Member opens plan picker from account dropdown
+Given a logged-in member on any account page
+When they click the account avatar and select "Manage Plan"
+Then the plan picker modal opens
+And their current plan is pre-selected
+
+Scenario: Closing the modal returns focus to the dropdown trigger
+Given the plan picker modal is open
+When the member presses Escape
+Then the modal closes
+And focus returns to the "Manage Plan" link
+
+Scenario: Link is hidden for unauthenticated users
+Given a logged-out visitor
+When they open the account dropdown
+Then "Manage Plan" does not appear in the menu
+```
+
+What's deliberately not tested above: tab order through the rest of the dropdown, Safari iOS rendering, mobile breakpoints, contrast ratios. Those are standing QA work, not AC.
+
 ### Reference tickets by Jira key
 
 Use the actual Jira key (e.g., `COREAPP1-3279`), not informal names like "Story 0" or "the shared foundations story." Jira auto-links keys in descriptions.
@@ -908,6 +962,16 @@ Panel types: `info`, `note`, `warning`, `success`, `error`
       "content": [{ "type": "text", "text": "Acceptance Criteria" }]
     },
     {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "Scenario: Member opens plan picker from account dropdown",
+          "marks": [{ "type": "strong" }]
+        }
+      ]
+    },
+    {
       "type": "bulletList",
       "content": [
         {
@@ -915,7 +979,7 @@ Panel types: `info`, `note`, `warning`, `success`, `error`
           "content": [
             {
               "type": "paragraph",
-              "content": [{ "type": "text", "text": "Criterion one" }]
+              "content": [{ "type": "text", "text": "Given a logged-in member on any account page" }]
             }
           ]
         },
@@ -924,7 +988,16 @@ Panel types: `info`, `note`, `warning`, `success`, `error`
           "content": [
             {
               "type": "paragraph",
-              "content": [{ "type": "text", "text": "Criterion two" }]
+              "content": [{ "type": "text", "text": "When they click the account avatar and select \"Manage Plan\"" }]
+            }
+          ]
+        },
+        {
+          "type": "listItem",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [{ "type": "text", "text": "Then the plan picker modal opens with their current plan pre-selected" }]
             }
           ]
         }
