@@ -24,6 +24,32 @@ For the full style guide, load the `writer` skill.
 
 ## Ticket Authoring Guidelines
 
+### Story description template
+
+Every story description follows this skeleton. `Overview` and `Acceptance Criteria` are required; the rest are optional and dropped when they have nothing to say. The detailed rules below this section govern how to fill each part.
+
+```
+### Overview
+One or two short paragraphs: the problem or gap, and why it matters now.
+Lead with the point. No implementation steps.
+
+### Acceptance Criteria
+Gherkin scenarios (Given / When / Then), written for QA. Cover at least
+one negative path. Test the delta, not the product.
+
+### Out of scope        (optional)
+What this ticket deliberately does not cover, so reviewers and QA don't
+expand it. Reference related Jira keys that own the excluded work.
+
+### Implementation Notes (optional)
+High-level pointers only: constraints, gotchas, links to designs or docs.
+Not a step-by-step. The engineer decides how to build it.
+```
+
+Subtasks use the same skeleton, scaled down: a one-paragraph `Overview` and the `Acceptance Criteria` for that subtask's slice of work (including its own testing). `Out of scope` and `Implementation Notes` are rarely needed on a subtask.
+
+See **Full Example: Rich Story Description** below for this template rendered as ADF.
+
 ### Scope each story by file ownership
 
 Each story should own specific files exclusively. No two stories should touch the same file. This enables parallel development with zero merge conflicts and makes ownership unambiguous.

@@ -23,6 +23,32 @@ For the full style guide, read `~/.claude/knowledge/writer.md`.
 
 ## Ticket Authoring Guidelines
 
+### Story description template
+
+Every story description follows this skeleton. `Overview` and `Acceptance Criteria` are required; the rest are optional and dropped when they have nothing to say. The detailed rules below this section govern how to fill each part.
+
+```
+### Overview
+One or two short paragraphs: the problem or gap, and why it matters now.
+Lead with the point. No implementation steps.
+
+### Acceptance Criteria
+Gherkin scenarios (Given / When / Then), written for QA. Cover at least
+one negative path. Test the delta, not the product.
+
+### Out of scope        (optional)
+What this ticket deliberately does not cover, so reviewers and QA don't
+expand it. Reference related Jira keys that own the excluded work.
+
+### Implementation Notes (optional)
+High-level pointers only: constraints, gotchas, links to designs or docs.
+Not a step-by-step. The engineer decides how to build it.
+```
+
+Subtasks use the same skeleton, scaled down: a one-paragraph `Overview` and the `Acceptance Criteria` for that subtask's slice of work (including its own testing). `Out of scope` and `Implementation Notes` are rarely needed on a subtask.
+
+See **Full Example: Rich Story Description** below for this template rendered as ADF.
+
 ### Scope each story by file ownership
 
 Each story should own specific files exclusively. No two stories should touch the same file. This enables parallel development with zero merge conflicts and makes ownership unambiguous.
@@ -163,6 +189,8 @@ print(v[0]['value'] if v else '')")
 If the epic's CAPEX value is unset, create the story without the field rather than guessing. Surface the gap to the user so they can decide.
 
 For subtasks, read CAPEX from the parent story (which already inherited from the epic) and propagate it the same way.
+
+**Exception: never auto-set CAPEX on bugs.** A bug fix is maintenance of existing functionality (OPEX), not new capitalizable development, so it does not inherit CAPEX from its parent even when the parent epic is marked `YES`. When creating a Bug (issue type `10003`), omit `customfield_11317` rather than propagating the parent's value. If the user explicitly says a specific bug is CAPEX, set it as instructed, but never default it.
 
 ### Workflow: plan one story at a time
 
