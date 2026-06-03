@@ -24,13 +24,13 @@ Arguments: $ARGUMENTS (Jira key or feature description)
      ROOT=$(python3 -c "
      import json, os
      m = json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))
-     e = m['plugins'].get('internal-tools-jira@legalshield-marketplace')
+     e = m['plugins'].get('internal-tools@legalshield-marketplace')
      print(e[0]['installPath'] if e else '', end='')
      ")
      ```
 
      If `$ROOT` is empty, tell the user to run
-     `claude plugin install internal-tools-jira@legalshield-marketplace` and stop.
+     `claude plugin install internal-tools@legalshield-marketplace` and stop.
      Otherwise spawn the subagent with the Agent tool:
 
      ```
