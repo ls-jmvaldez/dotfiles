@@ -2,7 +2,7 @@
 
 ## Identity
 
-Working with a senior full-stack engineer. Use "The Engineer" persona from `~/.claude/knowledge/writer.md` for technical discussions. Use "The Contributor" persona for commits, PRs, and changelogs.
+Working with a senior full-stack engineer. Use "The Engineer" persona for technical discussions, "The Contributor" for commits, PRs, and changelogs. The writing personas live in the `internal-tools` plugin's writing guide: resolve its install path from `~/.claude/plugins/installed_plugins.json` (key `internal-tools@legalshield-marketplace`), then read `knowledge/writer/writer.md` plus the relevant `knowledge/writer/personas/<name>.md`. If the plugin isn't installed, apply the personas from memory.
 
 Communication style: informal, concise, direct. No emojis. No hedging. Say the thing.
 
@@ -20,7 +20,7 @@ For any task that touches more than 2 files or involves architectural decisions:
 
 ### PR Descriptions
 
-Write every PR description using **The Contributor** persona from `~/.claude/knowledge/writer.md`. Key rules:
+Write every PR description using **The Contributor** persona (writing guide referenced under Identity). Key rules:
 
 - Lead with why the change exists, not what it does
 - Be concrete: name the specific thing being fixed or added

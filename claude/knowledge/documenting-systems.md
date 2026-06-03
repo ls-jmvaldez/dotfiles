@@ -6,7 +6,7 @@ license: MIT
 
 # Technical Documentation
 
-For writing style, tone, and voice guidance, read `~/.claude/knowledge/writer.md` and use **The Engineer** persona.
+For writing style, tone, and voice guidance, read the `internal-tools` plugin's writing guide (`knowledge/writer/writer.md`, resolved per CLAUDE.md's Identity section) and use **The Engineer** persona.
 
 ## Core Principles
 
@@ -65,5 +65,5 @@ Every concept needs a concrete example.
 
 ## Related Knowledge
 
-- `~/.claude/knowledge/writer.md` — Writing style, tone, and voice (use The Engineer persona)
+- `internal-tools` plugin → `knowledge/writer/writer.md` — Writing style, tone, and voice (use The Engineer persona)
 - `~/.claude/knowledge/visualizing-with-mermaid.md` — Architecture and flow diagrams
