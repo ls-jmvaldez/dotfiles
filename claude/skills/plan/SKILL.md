@@ -16,22 +16,41 @@ Arguments: $ARGUMENTS (Jira key or feature description)
 2. **Resolve the source material** from the first argument:
 
    - **If the argument matches a Jira key pattern** (`[A-Z][A-Z0-9]+-[0-9]+`, e.g. `COREAPP1-3307`, `OPSUC-2260`):
-   spawn a subagent to load ticket context before authoring. Use the Agent tool with:
+   spawn a subagent to load ticket context before authoring. First resolve the plugin
+   root so the subagent reads the team's canonical read policy (`${CLAUDE_PLUGIN_ROOT}`
+   only resolves inside the plugin, so resolve the install path from the manifest):
+
+     ```bash
+     ROOT=$(python3 -c "
+     import json, os
+     m = json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))
+     e = m['plugins'].get('internal-tools-jira@legalshield-marketplace')
+     print(e[0]['installPath'] if e else '', end='')
+     ")
+     ```
+
+     If `$ROOT` is empty, tell the user to run
+     `claude plugin install internal-tools-jira@legalshield-marketplace` and stop.
+     Otherwise spawn the subagent with the Agent tool:
 
      ```
      subagent_type: general-purpose
      model: haiku
      description: Load Jira ticket context
      prompt: |
-       Fetch Jira ticket <KEY> and return a context block. Use the pattern in
-       ~/.claude/knowledge/jira/jira.md for authentication, follow the "Default Read
-       Policy" section, and use the `Get Issue Details` endpoint with
-       `fields=summary,status,assignee,parent,subtasks,comment,attachment,customfield_10118,customfield_11240,issuelinks`.
+       Fetch Jira ticket <KEY> and return a context block. Read <ROOT>/skills/jira/references/reading.md
+       first and follow it exactly: it covers auth, the Default Read Policy (which fields to
+       request, including customfield_10600 Acceptance Criteria), the ADF-to-text renderer,
+       the comments policy, and the attachments policy. Use its full field list — do not
+       trim it; AC in particular lives in customfield_10600 and is easy to miss.
 
        Return:
          - Title
          - Description (raw text, not ADF)
-         - Acceptance criteria (if present)
+         - Acceptance criteria: surface customfield_10600 if populated; if it's empty, scan
+           the description for an "Acceptance Criteria" heading or a Given/When/Then block
+           and report that (per the AC-fallback note in reading.md). Do not report "none"
+           just because the field is empty.
          - Parent epic key and title
          - Linked issues (blocked by / blocks / relates)
          - Current status
@@ -39,8 +58,7 @@ Arguments: $ARGUMENTS (Jira key or feature description)
            Flatten ADF bodies to plain text. If a comment carries a decision, edge case,
            or clarification not in the description, expand it to 1–2 sentences.
          - **Attachments**: for each, list `filename (mimeType, size)` plus a one-line
-           summary of why it matters. Auto-download per the policy in
-           ~/.claude/knowledge/jira/jira.md → "Read Attachments":
+           summary of why it matters. Auto-download per the attachments policy in reading.md:
              - text-like files: inline contents (truncate to ~80 lines if long)
              - images: save to `${TMPDIR:-/tmp}/jira-assets/<KEY>/` and report the path
                so the parent agent can Read them with the multimodal tool
@@ -49,6 +67,8 @@ Arguments: $ARGUMENTS (Jira key or feature description)
        Keep prose under 600 words; attachment file contents and image paths are exempt
        from that budget. Do not speculate — if a field is empty, say "(none)".
      ```
+
+     Substitute the resolved `$ROOT` for `<ROOT>` in the prompt before spawning.
 
      Wait for the subagent to return. Use its output as the authoritative source for the plan's Specification section.
 

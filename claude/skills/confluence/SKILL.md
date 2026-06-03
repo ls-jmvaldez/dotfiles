@@ -5,7 +5,7 @@ argument-hint: "Confluence operation to perform"
 model: sonnet
 ---
 
-Read the knowledge file at `~/.claude/knowledge/confluence/confluence.md` before proceeding. When composing page content, follow `~/.claude/knowledge/writer.md` and select the persona from the table below.
+Read the knowledge file at `~/.claude/knowledge/confluence/confluence.md` before proceeding. When composing page content, follow the team writing guide bundled in the `internal-tools-jira` plugin: load `$ROOT/knowledge/writer/writer.md` (the core) plus only the one `$ROOT/knowledge/writer/personas/<name>.md` you pick from the table below. Resolve `$ROOT` per the Process section.
 
 Arguments: $ARGUMENTS
 
@@ -19,19 +19,19 @@ Arguments: $ARGUMENTS
 
 Any other space (`CP`, `NPI`, `PT`, etc.) is opt-in. If the user says "create a page about X" with no target, default to the personal space and surface the URL.
 
-## Persona selection (from `~/.claude/knowledge/writer.md`)
+## Persona selection (from `$ROOT/knowledge/writer/`)
 
-Pick before writing. State the choice in one line at the top of your draft so the user can redirect.
+Pick before writing. State the choice in one line at the top of your draft so the user can redirect. Load the core (`writer/writer.md`) plus only the persona file named below.
 
-| Content type | Persona |
-|--------------|---------|
-| Technical docs, API refs, READMEs, code explanations | The Engineer |
-| ADRs, design docs, architecture docs, tradeoff analyses | The Architect |
-| Strategy docs, analysis, product specs, roadmaps | The PM |
-| Tutorials, onboarding, walkthroughs, getting started | The Educator |
-| Landing pages, pitch decks, vision docs, blog posts | The Marketer |
-| Release notes, changelogs | The Contributor |
-| Error messages, UI copy, notifications, empty states | The UX Writer |
+| Content type | Persona | File |
+|--------------|---------|------|
+| Technical docs, API refs, READMEs, code explanations | The Engineer | `personas/engineer.md` |
+| ADRs, design docs, architecture docs, tradeoff analyses | The Architect | `personas/architect.md` |
+| Strategy docs, analysis, product specs, roadmaps | The PM | `personas/pm.md` |
+| Tutorials, onboarding, walkthroughs, getting started | The Educator | `personas/educator.md` |
+| Landing pages, pitch decks, vision docs, blog posts | The Marketer | `personas/marketer.md` |
+| Release notes, changelogs | The Contributor | `personas/contributor.md` |
+| Error messages, UI copy, notifications, empty states | The UX Writer | `personas/ux-writer.md` |
 
 When a page has both strategic and technical halves (e.g. an overview + technical-details child), use the Architect on the parent and the Engineer on the child.
 
@@ -57,11 +57,21 @@ When a page has both strategic and technical halves (e.g. an overview + technica
 ## Process
 
 1. Verify auth: `$CONFLUENCE_AUTH_TOKEN` is base64 of `joevaldez@pplsi.com:<API_TOKEN>` from 1Password (`op://PPLSI/Confluence API Token/credential`). If 401, run `confluence-auth` in the shell to refresh.
-2. Resolve the target. Creation defaults to the personal space above; reads/updates use the ID or title the user supplied.
-3. Pick a persona from the table and announce it before drafting body content.
-4. For updates, fetch current `version.number` first and submit `version.number + 1` in the PUT.
-5. For complex storage-format payloads (tables, macros), write the JSON body to a temp file and pass with `curl -d @file` to avoid shell escaping bugs.
-6. Report the page ID and a clickable `https://legalshield.atlassian.net/wiki/...` URL on success.
+2. Resolve the writer guide root (the personas live in the `internal-tools-jira` plugin). `${CLAUDE_PLUGIN_ROOT}` only resolves inside the plugin, so resolve the install path from the manifest:
+   ```bash
+   ROOT=$(python3 -c "
+   import json, os
+   m = json.load(open(os.path.expanduser('~/.claude/plugins/installed_plugins.json')))
+   e = m['plugins'].get('internal-tools-jira@legalshield-marketplace')
+   print(e[0]['installPath'] if e else '', end='')
+   ")
+   ```
+   If `$ROOT` is empty, fall back to `~/.claude/knowledge/writer.md` for voice rules and proceed.
+3. Resolve the target. Creation defaults to the personal space above; reads/updates use the ID or title the user supplied.
+4. Pick a persona from the table, load `$ROOT/knowledge/writer/writer.md` + the chosen persona file, and announce the persona before drafting body content.
+5. For updates, fetch current `version.number` first and submit `version.number + 1` in the PUT.
+6. For complex storage-format payloads (tables, macros), write the JSON body to a temp file and pass with `curl -d @file` to avoid shell escaping bugs.
+7. Report the page ID and a clickable `https://legalshield.atlassian.net/wiki/...` URL on success.
 
 ## When to defer to another skill
 
