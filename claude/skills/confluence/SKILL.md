@@ -14,12 +14,16 @@ Arguments: $ARGUMENTS
 
 ## 1. Auth (this is the part that's yours)
 
-The plugin is vault-agnostic and will not inject a token. Do it here. `$CONFLUENCE_AUTH_TOKEN`
-is the **pre-encoded** base64 of `email:apitoken`. If it's unset, pull it from 1Password,
-then verify:
+The plugin is vault-agnostic and will not inject a token. Do it here, mirroring your
+`confluence-auth` shell function: read the raw Atlassian API token from 1Password and
+base64-encode `email:token` into `$CONFLUENCE_AUTH_TOKEN`. If it's unset:
 
 ```bash
-[ -z "$CONFLUENCE_AUTH_TOKEN" ] && export CONFLUENCE_AUTH_TOKEN="$(op read 'op://PPLSI/Confluence - Base64/credential' 2>/dev/null)"
+if [ -z "$CONFLUENCE_AUTH_TOKEN" ]; then
+  ATLASSIAN_EMAIL='joevaldez@pplsi.com'
+  ATLASSIAN_TOKEN="$(op read 'op://PPLSI/Confluence API Token/credential' 2>/dev/null)"
+  [ -n "$ATLASSIAN_TOKEN" ] && export CONFLUENCE_AUTH_TOKEN="$(printf '%s:%s' "$ATLASSIAN_EMAIL" "$ATLASSIAN_TOKEN" | base64 | tr -d '\n')"
+fi
 [ -z "$CONFLUENCE_AUTH_TOKEN" ] && echo "no token — run: op signin (or confluence-auth)" || \
 curl -sS -o /dev/null -w "%{http_code}\n" -H "Authorization: Basic $CONFLUENCE_AUTH_TOKEN" \
   "https://legalshield.atlassian.net/wiki/api/v2/spaces?limit=1"
