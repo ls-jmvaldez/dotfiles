@@ -5,24 +5,35 @@ argument-hint: "describe what to investigate"
 model: sonnet
 ---
 
-Your personal New Relic entry point. Auth is just the `newrelic` CLI profile (nothing to
-inject), so this skill mostly defers to the `internal-tools` plugin's newrelic router, which
-holds the NRQL catalog, NerdGraph recipes, interpretation thresholds, app registry, and bug
-report template. Do not duplicate the plugin's routing here.
+Your personal New Relic entry point. It owns auth — the `newrelic` CLI profile for NRQL plus
+injecting your NerdGraph API creds from 1Password — and otherwise defers to the
+`internal-tools` plugin's newrelic router, which holds the NRQL catalog, NerdGraph recipes,
+interpretation thresholds, app registry, and bug report template. Do not duplicate the
+plugin's routing here.
 
 **This skill is read-only/diagnostic.** It queries observability data but never makes
 deployments, rollbacks, or configuration changes.
 
 Arguments: $ARGUMENTS
 
-## 1. Verify auth
+## 1. Auth (this is the part that's yours)
+
+NRQL / CLI queries (the bulk of this skill) run off the `newrelic` CLI profile, configured
+once. Verify it:
 
 ```bash
-newrelic profile list >/dev/null 2>&1 && echo "profile present" || echo "no NR profile — see the plugin's troubleshooting.md"
+newrelic profile list >/dev/null 2>&1 && echo "profile present" || echo "no NR profile — run: newrelic profile add ..."
 ```
 
-NerdGraph recipes also need `NEW_RELIC_API_KEY` and `NEW_RELIC_ACCOUNT_ID` (a Personal API
-Key, `NRAK-...`).
+NerdGraph recipes (error groups, service dependencies, alert violations) need API creds. The
+plugin is vault-agnostic and won't inject them; do it here. If unset, pull the key from
+1Password and set the account ID:
+
+```bash
+[ -z "$NEW_RELIC_API_KEY" ] && export NEW_RELIC_API_KEY="$(op read 'op://PPLSI/NewRelic CLI/credential' 2>/dev/null)"
+export NEW_RELIC_ACCOUNT_ID="${NEW_RELIC_ACCOUNT_ID:-124794}"
+[ -z "$NEW_RELIC_API_KEY" ] && echo "no NR API key — run: op signin (or nr-auth)" || echo "NerdGraph creds present"
+```
 
 ## 2. Resolve the plugin root
 
