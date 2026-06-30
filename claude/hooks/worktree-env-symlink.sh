@@ -17,18 +17,21 @@ TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
 
 CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
-# Only run for `git worktree add`.
-echo "$CMD" | grep -qE '(^|[^[:alnum:]_-])git worktree add( |$)' || exit 0
+# Only run for `git worktree add`. Anchor on `worktree add` (not `git worktree
+# add`) so global git options between the binary and the subcommand still match,
+# e.g. `git -C /path worktree add ...`.
+echo "$CMD" | grep -qE '(^|[^[:alnum:]_-])worktree add( |$)' || exit 0
 
 # Honor bypass marker.
 if echo "$CMD" | grep -qE '# +no-env-symlink'; then
   exit 0
 fi
 
-# Extract target path from the `git worktree add` segment.
-SEGMENT=$(echo "$CMD" | sed -nE 's/.*(git worktree add[^|;&]*).*/\1/p' | head -1)
+# Extract target path from the `worktree add` segment. Anchoring on `worktree
+# add` keeps any `git -C <path>` prefix out of the positionals.
+SEGMENT=$(echo "$CMD" | sed -nE 's/.*(worktree add[^|;&]*).*/\1/p' | head -1)
 POSITIONALS=$(echo "$SEGMENT" \
-  | sed -E 's/git worktree add//' \
+  | sed -E 's/worktree add//' \
   | sed -E 's/(-b|-B) +[^ ]+//g' \
   | sed -E 's/(--track|--guess-remote|--detach|--force|--lock|--no-checkout|--checkout|-f)//g' \
   | awk '{$1=$1; print}')

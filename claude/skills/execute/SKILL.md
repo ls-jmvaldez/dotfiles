@@ -70,16 +70,39 @@ For each `## Phase N:` section:
 
 After all subsystem groups in a phase finish cleanly:
 
-1. `cd <worktree-path>` (or use `git -C`)
-2. Stage only the files the phase modified: `git add <file1> <file2> ...`. Do not use `git add -A`.
-3. Commit with a conventional-commit message derived from the phase name and spec:
+1. Target the worktree explicitly on **every** git command with `git -C <worktree-path> ...`.
+   Do NOT `cd` into the worktree and rely on it persisting — see "Git command safety" below.
+   Before the first write op of the phase, verify you are on the right branch:
+   `git -C <worktree-path> branch --show-current` must equal `<branch>` from the Branch Plan row.
+2. Stage only the files the phase modified: `git -C <worktree-path> add <file1> <file2> ...`. Do not use `git add -A`.
+3. Commit with `git -C <worktree-path> commit ...`, conventional-commit message derived from the phase name and spec:
    - Format: `<type>(<scope>): <phase-name-kebab-lowercase>`
    - Body: 2-3 sentences explaining WHY, pulled from the plan's Specification
-4. `git push -u origin <branch>`
-5. `gh pr create --draft --base <base> --title "<title>" --body "<body>"`
+4. `git -C <worktree-path> push -u origin <branch>`
+5. `gh pr create --draft --base <base> --title "<title>" --body "<body>"` (run with `-C <worktree-path>` or pass `--head <branch>`)
    - Title from the phase name plus ticket key if present
    - Body: link to the plan spec, link the Jira ticket(s), brief change summary
 6. Report the PR URL back to the user immediately so Copilot review can start on this phase while later phases are still executing.
+
+## Git command safety (worktrees)
+
+The Bash tool's working directory **silently resets to the primary repo
+checkout between calls** — a `cd <worktree-path>` in one call does not persist
+to the next. The primary checkout is usually on `main`, so a bare git command
+(`git commit --amend`, `git reset`, `git push`) runs against `main` instead of
+the feature branch. This has already corrupted a merged commit's message on
+local `main` once (recovered via `git reset --hard origin/main`).
+
+Non-negotiable rules:
+
+- Prefix **every** git invocation with `git -C <worktree-path>`. Never depend on
+  `cd` to set the target.
+- Before any history-mutating op (`commit`, `commit --amend`, `reset`, `rebase`,
+  `push`, `push --force-with-lease`), confirm the branch:
+  `git -C <worktree-path> branch --show-current` must match the intended branch.
+- Never `--amend` or `reset` unless `branch --show-current` is the feature
+  branch. If it reports `main` (or any base branch), stop — the command is
+  pointed at the wrong tree.
 
 ## Step 7: Completion
 
@@ -109,4 +132,5 @@ If any step fails:
 - You are an orchestrator; subagents do the actual code work.
 - Fewer agents with broader scope = faster execution. Max 4 parallel.
 - User never runs git by hand from this skill.
+- Every git command targets the worktree with `git -C <worktree-path>`; never rely on `cd` (see "Git command safety"). Verify the branch before any commit/amend/reset/push.
 - The plan file is the source of truth. If the plan is wrong, stop and ask the user to fix it.
