@@ -100,32 +100,22 @@
           },
           {
             "type": "command",
-            "command": "bash ~/.claude/hooks/pr-attribution.sh",
-            "timeout": 15
-          },
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/pr-comment-attribution.sh",
-            "timeout": 15
-          },
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/pr-issue-comment-attribution.sh",
-            "timeout": 15
-          },
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/pr-review-attribution.sh",
-            "timeout": 15
-          },
-          {
-            "type": "command",
             "command": "bash ~/.claude/hooks/pr-ai-attribution.sh",
             "timeout": 15
           },
           {
             "type": "command",
             "command": "bash ~/.claude/hooks/worktree-env-symlink.sh",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/prettier-write.sh",
             "timeout": 15
           }
         ]
