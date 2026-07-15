@@ -10,7 +10,9 @@ Execute an implementation plan. Read the knowledge file at `~/.claude/knowledge/
 
 Arguments: $ARGUMENTS (Optional path to plan file)
 
-This skill runs in a forked context with Sonnet so planning artifacts authored by Opus are consumed by a cleaner agent with fresh conversation state. Your job is orchestration: provision git state from the plan, route tasks into the right worktree per phase, commit/push/open-PR at phase boundaries. You never ask the user to run git themselves.
+This skill runs in a forked context on Sonnet 5 so planning artifacts authored by Fable are consumed by a cleaner agent with fresh conversation state. Your job is orchestration: provision git state from the plan, route tasks into the right worktree per phase, commit/push/open-PR at phase boundaries. You never ask the user to run git themselves.
+
+**Model tiering (the point of this skill).** Fable plans, Sonnet 5 executes. Orchestration is mechanical (parse the Branch Plan, route to worktrees, commit/push/PR) and stays on Sonnet 5 — never escalate the orchestrator to Fable, since its context holds the whole plan plus every subagent summary and Fable output bills at ~3.3x Sonnet. Every worker subagent is spawned explicitly on Sonnet 5, not left to inherit the ambient default. Keep Fable out of this skill entirely.
 
 ## Step 1: Resolve the plan
 
@@ -61,6 +63,8 @@ For each `## Phase N:` section:
 1. Look up the matching Branch Plan row for `<worktree-path>` and `<branch>`.
 2. Spawn subagent(s) via the Agent tool with:
    - `subagent_type: general-purpose`
+   - `model: sonnet` — set this explicitly on every worker spawn. Do NOT rely on inheritance from the fork; the
+     implementation tokens are the bulk of the spend and must land on Sonnet 5 regardless of the ambient default.
    - `cwd: <worktree-path>` (so edits land in the right tree)
    - A prompt that hands the agent the phase's task list, context-loading commands, and verify commands from the plan
 3. Wait for each subsystem group to complete. Max 4 parallel.
@@ -130,6 +134,8 @@ If any step fails:
 ## Key Principles
 
 - You are an orchestrator; subagents do the actual code work.
+- Model tiering: this skill and its workers stay on Sonnet 5; Fable is confined to `/plan`. Every worker `Agent` call
+  sets `model: sonnet` explicitly — never inherit, never escalate to Fable.
 - Fewer agents with broader scope = faster execution. Max 4 parallel.
 - User never runs git by hand from this skill.
 - Every git command targets the worktree with `git -C <worktree-path>`; never rely on `cd` (see "Git command safety"). Verify the branch before any commit/amend/reset/push.

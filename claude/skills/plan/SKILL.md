@@ -2,7 +2,7 @@
 name: plan
 description: Create a detailed implementation plan for a feature or task, optionally loading Jira context first
 argument-hint: Jira key (e.g. COREAPP1-3307) or a free-text feature description
-model: opus[1m]
+model: fable
 ---
 
 Create an implementation plan. Read the knowledge file at `~/.claude/knowledge/writing-plans.md` before proceeding.
@@ -77,8 +77,11 @@ Arguments: $ARGUMENTS (Jira key or feature description)
 3. **Clarify any ambiguity upfront.** If the ticket or description leaves meaningful tradeoffs unresolved, ask the user before authoring.
 Corrections before writing are cheap.
 
-4. **Author the plan** following the template structure from `writing-plans.md`. The author model is already Opus (this skill's frontmatter),
-so there is no further handoff.
+4. **Author the plan** following the template structure from `writing-plans.md`. Planning is the highest-leverage,
+lowest-volume step, so this skill authors on Fable (its frontmatter `model: fable`) — the premium reasoning tier is
+worth it here. Execution is a separate, cheaper tier: `/execute` runs on Sonnet 5 and routes all worker subagents to
+Sonnet 5, so Fable is confined to planning and never touches the high-volume implementation work. There is no further
+handoff — write the plan well enough that Sonnet workers can execute each task without re-deriving intent.
 
 5. **Required sections** — the plan is incomplete without all of these:
 
