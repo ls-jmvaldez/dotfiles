@@ -60,7 +60,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "sonnet",
+  "model": "opus[1m]",
   "hooks": {
     "PreToolUse": [
       {
@@ -133,8 +133,8 @@
   "extraKnownMarketplaces": {
     "legalshield-marketplace": {
       "source": {
-        "source": "github",
-        "repo": "LegalShield/legalshield-claude-marketplace"
+        "source": "directory",
+        "path": "/Users/valdezjm/Public/source/legalshield-claude-marketplace"
       }
     }
   },
