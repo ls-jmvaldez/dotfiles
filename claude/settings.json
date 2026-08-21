@@ -141,5 +141,6 @@
   "tui": "fullscreen",
   "theme": "dark",
   "skipAutoPermissionPrompt": true,
-  "effortLevel": "medium"
+  "effortLevel": "medium",
+  "outputStyle": "direct"
 }

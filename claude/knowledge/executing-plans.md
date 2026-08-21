@@ -14,10 +14,10 @@ A plan file's `> **Status:**` header moves through these states:
 
 | From | To | When |
 |------|----|------|
-| `DRAFT` | `IN_PROGRESS` | `/execute` fires — invocation is approval |
+| `DRAFT` | `IN_PROGRESS` | `/execute` fires; invocation is approval |
 | `APPROVED` | `IN_PROGRESS` | `/execute` fires on a plan already explicitly approved |
 | `IN_PROGRESS` | `COMPLETED` | All phases committed, pushed, and draft PRs opened |
-| `IN_PROGRESS` | `IN_PROGRESS` | A phase failed — re-run resumes from that phase |
+| `IN_PROGRESS` | `IN_PROGRESS` | A phase failed; re-run resumes from that phase |
 | any | `COMPLETED` | Manually only if work was abandoned or merged elsewhere |
 
 Flip the status on disk before any git work starts. If the plan is already `COMPLETED`, stop immediately.
@@ -45,7 +45,7 @@ git worktree add -b <branch> <worktree-path> <base>
 
 The `worktree-conflict.sh` PreToolUse hook runs automatically and warns on stderr if the incoming branch would overlap with files in another active worktree. Surface any warning to the user and pause for direction. Do not silently proceed.
 
-If a worktree already exists at the path (resuming), `git worktree add` errors. That's the signal to skip — the worktree is already provisioned.
+If a worktree already exists at the path (resuming), `git worktree add` errors. That's the signal to skip; the worktree is already provisioned.
 
 ## Phase Routing
 
@@ -82,7 +82,7 @@ After all subsystem groups in a phase finish cleanly:
 2. Stage only the files this phase modified. `git add <file1> <file2>`. Never `git add -A` or `git add .`.
 3. Commit with a conventional-commit message:
    - Header: `<type>(<scope>): <phase-name-kebab-lowercase>` (50 chars max)
-   - Body: why this phase exists, pulled from the plan's Specification. 2-3 sentences, no em dashes.
+   - Body: why this phase exists, pulled from the plan's Specification. 2-3 sentences. Obey the prose style in the writer guide (no em dashes, no filler phrases).
 4. `git push -u origin <branch>`
 5. `gh pr create --draft --base <base> --title <title> --body <body>` where:
    - Title is the phase name (+ ticket key if present in the plan)
@@ -100,7 +100,7 @@ Once the last phase ships its PR:
 ## Failure Handling
 
 - Leave plan at `IN_PROGRESS`
-- Append under the status header: `**Failed at:** Phase N — <one-line reason>`
+- Append under the status header: `**Failed at:** Phase N, <one-line reason>`
 - Surface the error to the user
 - Re-invoking `/execute` on the same plan skips provisioning for already-created worktrees and resumes at the failing phase
 
@@ -112,7 +112,7 @@ Once the last phase ships its PR:
 
 ## Architectural Fit
 
-Changes should integrate cleanly with existing patterns. If a subagent's work is fighting the architecture, that's a signal to escalate — refactor first as a separate phase, or ask the user whether to proceed. Don't reinvent wheels when existing libraries solve the problem, but don't reach for a dependency for trivial things either.
+Changes should integrate cleanly with existing patterns. If a subagent's work is fighting the architecture, that's a signal to escalate: refactor first as a separate phase, or ask the user whether to proceed. Don't reinvent wheels when existing libraries solve the problem, but don't reach for a dependency for trivial things either.
 
 ## Principles
 
