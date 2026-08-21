@@ -391,8 +391,17 @@ the entire corporate-filler list that four other files ban.
 6. [ ] **Regression lock on current behavior:** capture the existing `pr-text-style.sh`
        block/pass decision for a set of real payloads *before* refactoring, then assert the
        refactored version returns identical decisions
-7. [ ] If generated, add a test asserting the generated output is current, so a guide edit without
-       a regen fails CI rather than silently under-enforcing
+7. [ ] **Decided: hand-maintained, guarded by a drift test.** A generator would silently emit an
+       empty library if `forbidden-patterns.md` went missing, under-enforcing without failing.
+       Instead keep the library hand-written and add a test asserting every regex-enforceable
+       entry in `forbidden-patterns.md` has a corresponding pattern in `voice-patterns.sh`. CI
+       fails on drift. This closes the sync obligation that would otherwise reintroduce the exact
+       divergence this plan exists to remove
+8. [ ] **Decided: exempt inline-backtick spans and fenced code blocks** before scanning, matching
+       what `voice-check.sh` already does for fences. Quoting a banned phrase in backticks to
+       discuss it passes; using it unquoted in prose still blocks. Apply this in the shared
+       library so every consumer inherits one rule. This gap already blocked a legitimate PR body
+       on this very work
 
 **Verify:** `bash tests/test-hooks.sh` and `shellcheck hooks/lib/voice-patterns.sh`. Regression
 fixtures return byte-identical decisions to the pre-refactor hook.
@@ -533,7 +542,9 @@ Only intentional occurrences inside quoted lists remain.
        resolves reliably from `settings.json`
 2. [ ] Extend the Bash scope gate to cover `git commit -m`, `jira` writes, and Confluence page
        bodies, all currently unchecked
-3. [ ] Confirm no false positives on ordinary commands containing matching substrings
+3. [ ] Confirm the backtick and fence carve-out from Task 2.5 step 8 applies here too. Widening
+       the surface to commits and Jira widens where a quoted example would otherwise be blocked
+4. [ ] Confirm no false positives on ordinary commands containing matching substrings
 
 **Verify:** Commit with a banned pattern in the message is blocked; a clean commit passes. Run the
 plugin's `tests/test-hooks.sh` against the sourced library to confirm nothing regressed.
@@ -592,8 +603,7 @@ Post-merge, reinstall from the published marketplace and confirm behavior matche
 ## Open questions
 
 1. Does `PreToolUse.updatedInput` reach the `Agent` tool's `prompt`? Task 2.3 settles it.
-2. Can the pattern library be generated from `forbidden-patterns.md`, or must it be hand-synced?
-   Affects whether Task 2.5 introduces a new drift risk.
+2. RESOLVED: pattern library stays hand-maintained with a drift test (Task 2.5 step 7).
 3. Does the digest measurably beat the output style alone? The merge gate decides it with real
    usage rather than assumption, and closing PR 3 is an expected outcome.
 4. Should `internal-tools` eventually absorb the voice plugin so the team shares the chat style?
