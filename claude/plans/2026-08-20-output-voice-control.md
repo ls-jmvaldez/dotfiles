@@ -1,15 +1,27 @@
 # Output Voice Control Implementation Plan
 
-> **Status:** IN_PROGRESS
+> **Status:** COMPLETED
 >
-> **Progress:** Phases 1-3 committed, pushed, draft PRs open.
-> - Phase 1 `feat/writer-voice-contract` -> PR #216
-> - Phase 2 `feat/voice-plugin` -> PR #217
-> - Phase 3 `feat/voice-digest` -> PR #218 (stacked on #217)
+> All four phases implemented, committed, pushed, and opened as draft PRs. Nothing is merged.
 >
-> **Stopped before:** Phase 4 (dotfiles). Row 4 not provisioned. The dotfiles working tree has
-> unrelated in-flight work and the plan file itself is untracked there; cleaning it is the user's
-> call, not the orchestrator's.
+> | Phase | Branch | PR |
+> | - | ------ | -- |
+> | 1 | `feat/writer-voice-contract` | marketplace #216 |
+> | 2 | `feat/voice-plugin` | marketplace #217 |
+> | 3 | `feat/voice-digest` | marketplace #218, stacked on #217 |
+> | 4 | `feat/output-voice-control` | dotfiles #2 |
+>
+> **The merge gate in Rollout has not run.** It is a human gate and blocks every merge.
+>
+> Carried into the gate:
+> - `updatedInput` reaching a subagent's prompt is still unconfirmed. Open question 1. The agent
+>   definition references in Phase 4 are the floor that does not depend on it.
+> - The five broad patterns the drift test surfaced (`leverage`, `robust`, `powerful`,
+>   `best practices`, `of course`) need a keep-or-downgrade decision. Documented in #217.
+> - The digest in #218 needs a manual rebase if it merges, and may be discarded outright.
+>   Open question 3.
+> - Run `claude/scripts/check-output-style.sh` after installing the plugin. It fails today by
+>   design, because the plugin is unmerged.
 
 ## Specification
 
