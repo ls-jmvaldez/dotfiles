@@ -128,7 +128,8 @@
   },
   "enabledPlugins": {
     "internal-tools@legalshield-marketplace": true,
-    "johnh4-html-doc@legalshield-marketplace": true
+    "johnh4-html-doc@legalshield-marketplace": true,
+    "ls-jmvaldez-voice@legalshield-marketplace": true
   },
   "extraKnownMarketplaces": {
     "legalshield-marketplace": {
@@ -138,8 +139,8 @@
       }
     }
   },
+  "effortLevel": "medium",
   "tui": "fullscreen",
   "theme": "dark",
-  "skipAutoPermissionPrompt": true,
-  "effortLevel": "medium"
+  "skipAutoPermissionPrompt": true
 }
