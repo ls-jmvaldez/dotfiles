@@ -139,5 +139,7 @@
     }
   },
   "tui": "fullscreen",
-  "skipAutoPermissionPrompt": true
+  "theme": "dark",
+  "skipAutoPermissionPrompt": true,
+  "effortLevel": "medium"
 }
