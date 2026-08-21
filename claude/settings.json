@@ -142,5 +142,6 @@
   "effortLevel": "medium",
   "tui": "fullscreen",
   "theme": "dark",
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "outputStyle": "ls-jmvaldez-voice:direct"
 }

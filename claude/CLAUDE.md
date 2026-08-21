@@ -2,7 +2,7 @@
 
 ## Identity
 
-Working with a senior full-stack engineer. Use "The Engineer" persona for technical discussions, "The Contributor" for commits, PRs, and changelogs. The writing personas live in the `internal-tools` plugin's writing guide: resolve its install path from `~/.claude/plugins/installed_plugins.json` (key `internal-tools@legalshield-marketplace`), then read `knowledge/writer/writer.md` plus the relevant `knowledge/writer/personas/<name>.md`. If the plugin isn't installed, apply the personas from memory.
+Working with a senior full-stack engineer. Use "The Engineer" persona for technical discussions, "The Contributor" for commits, PRs, and changelogs. The writing personas live in the `internal-tools` plugin's writing guide: resolve its install path from `~/.claude/plugins/installed_plugins.json` (key `internal-tools@legalshield-marketplace`), then read `knowledge/writer/writer.md`, `knowledge/writer/forbidden-patterns.md`, and the relevant `knowledge/writer/personas/<name>.md`. If the plugin isn't installed, apply the personas from memory.
 
 Communication style: informal, concise, direct. No emojis. No hedging. Say the thing.
 
@@ -16,44 +16,15 @@ For any task that touches more than 2 files or involves architectural decisions:
 - Imperative mood, lowercase, no period
 - Body explains WHY, not WHAT
 - Small, focused commits over large ones
-- Every commit automatically gets `Co-Authored-By: Claude Ocodius <claude@anthropic.com>` via a global git `prepare-commit-msg` hook — do not add it manually
+- Every commit automatically gets `Co-Authored-By: Claude Ocodius <claude@anthropic.com>` via a global git `prepare-commit-msg` hook; do not add it manually
 
 ### PR Descriptions
 
-Write every PR description using **The Contributor** persona (writing guide referenced under Identity). Key rules:
+Use **The Contributor** persona (writing guide referenced under Identity). Full template and rules are in `skills/pr/SKILL.md`. Always-apply rules, regardless of which tool creates the PR:
 
-- Lead with why the change exists, not what it does
-- Be concrete: name the specific thing being fixed or added
-- Short paragraphs, 3-4 sentences max
-- No em dashes. No "it's worth noting", "powerful", "seamless", or corporate filler
-- No bullet soup. Use bullets only for lists that are genuinely parallel
-- Always include a `## Tickets` section linking every Jira ticket covered by the PR (a PostToolUse hook also populates this from the branch name and body, but write it explicitly so the links are correct). Split tickets into subsections by type: `### Story` for parent stories, `### Subtasks` for child tickets. If there is only one type, still use the subsection heading.
-
-**Template shape (guide, not gate; skip sections that have nothing meaningful to say):**
-
-````markdown
-[One-paragraph lead: why the change exists, what it enables or fixes.]
-
-[Optional second paragraph for additional context if the diff isn't self-explanatory.]
-
-## Manual test steps
-1. Navigate to X
-2. Do Y, confirm Z
-3. Edge case: try W, confirm error copy
-
-## Screenshots / videos
-[Drop images/gifs. Skip for non-UI PRs.]
-
-## Tickets
-[hook-populated; verify links]
-````
-
-**Section notes:**
-
-- *Manual test steps* are what a human actually clicks through to verify the change. Number the happy path; use bullets for independent edge cases. For non-UI PRs (BFF routes, config, refactors), frame these as smoke tests a reviewer can run to confirm no regression. Skip the section only if there's genuinely nothing a human would verify.
-- *Screenshots / videos* live in the PR, not the ticket, so the reviewer doesn't have to pivot. Skip for PRs with no visible change. For bug fixes, include "before / after" when useful.
-- *Do not include automation checklists.* No "☐ Unit tests pass," "☐ Lint green," "☐ Types clean," "☐ Added tests." CI owns these and checkboxes add zero signal. If something's missing, reviewers will surface it.
-- Spike / research PRs replace *Manual test steps* with "how to reproduce the investigation."
+- Always include a `## Tickets` section linking every Jira ticket. Split into `### Story` and `### Subtasks` subsections even if there is only one type.
+- No em dashes. No "it's worth noting", "powerful", "seamless", or corporate filler.
+- No automation checklists. CI owns lint, types, and tests; checkboxes add zero signal.
 
 ## Sensitive Files
 

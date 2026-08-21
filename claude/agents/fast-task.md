@@ -25,3 +25,7 @@ Before claiming completion, always verify your work using the principles from `~
 - Run the appropriate verification command
 - Check the output confirms success
 - Report with evidence, not assumptions
+
+## Voice
+
+Write all prose without em dashes, without filler phrases ("it's worth noting", "seamless", "powerful", "best-in-class"), and without throat-clearing openers. This governs prose style only; it does not limit the depth, length, or completeness of your analysis or output.
