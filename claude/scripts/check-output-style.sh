@@ -68,3 +68,55 @@ if [ ! -f "$STYLE_FILE" ]; then
 fi
 
 printf 'OK: outputStyle "%s" resolves to %s\n' "$STYLE" "$STYLE_FILE"
+
+# A marketplace installed from a local directory serves plugin content out of
+# the repo itself, while installed_plugins.json keeps pointing at the version
+# pinned in the cache. The two can hold different text, and the cached copy is
+# not necessarily the one the session loads, so checking only the manifest path
+# can pass while a stale style is live. Compare both when the marketplace is a
+# directory source.
+MARKETPLACES="${CLAUDE_MARKETPLACE_MANIFEST:-$HOME/.claude/plugins/known_marketplaces.json}"
+[ -f "$MARKETPLACES" ] || exit 0
+
+MARKET_NAME=$(jq -r --arg p "$PLUGIN" \
+    '.plugins | to_entries[] | select(.key | startswith($p + "@")) | .key | split("@")[1]' \
+    "$MANIFEST" 2>/dev/null | head -1)
+[ -n "$MARKET_NAME" ] || exit 0
+
+MARKET_DIR=$(jq -r --arg m "$MARKET_NAME" \
+    '.[$m] | select(.source.source == "directory") | .installLocation // empty' \
+    "$MARKETPLACES" 2>/dev/null | head -1)
+[ -n "$MARKET_DIR" ] && [ -d "$MARKET_DIR" ] || exit 0
+
+# Locate the plugin by manifest name rather than by path: the directory layout
+# under plugins/ is arbitrary and does not have to match the plugin name.
+# Worktrees and node_modules hold stale duplicates and are excluded.
+SOURCE_STYLE=""
+while IFS= read -r manifest; do
+    [ -n "$manifest" ] || continue
+    if [ "$(jq -r '.name // empty' "$manifest" 2>/dev/null)" = "$PLUGIN" ]; then
+        CANDIDATE="$(dirname "$manifest")/output-styles/$NAME.md"
+        [ -f "$CANDIDATE" ] || CANDIDATE="$(dirname "$(dirname "$manifest")")/output-styles/$NAME.md"
+        if [ -f "$CANDIDATE" ]; then
+            SOURCE_STYLE="$CANDIDATE"
+            break
+        fi
+    fi
+done <<EOF
+$(find "$MARKET_DIR" -maxdepth 6 -name plugin.json \
+    -not -path '*/.claude/worktrees/*' -not -path '*/node_modules/*' 2>/dev/null)
+EOF
+
+[ -n "$SOURCE_STYLE" ] || exit 0
+
+if cmp -s "$STYLE_FILE" "$SOURCE_STYLE"; then
+    printf 'OK: cached copy matches the directory-source copy at %s\n' "$SOURCE_STYLE"
+    exit 0
+fi
+
+printf 'WARN: two copies of "%s" exist and they differ.\n' "$STYLE" >&2
+printf '      cached:    %s\n' "$STYLE_FILE" >&2
+printf '      directory: %s\n' "$SOURCE_STYLE" >&2
+printf '      A directory-source marketplace can serve either one. Sync them, or\n' >&2
+printf '      bump the plugin version so the cache is rebuilt from the repo.\n' >&2
+exit 0
