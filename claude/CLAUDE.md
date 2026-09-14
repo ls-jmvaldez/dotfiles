@@ -23,7 +23,7 @@ For any task that touches more than 2 files or involves architectural decisions:
 Use **The Contributor** persona (writing guide referenced under Identity). Full template and rules are in `skills/pr/SKILL.md`. Always-apply rules, regardless of which tool creates the PR:
 
 - Always include a `## Tickets` section linking every Jira ticket. Split into `### Story` and `### Subtasks` subsections even if there is only one type.
-- No em dashes. No "it's worth noting", "powerful", "seamless", or corporate filler.
+- No em dashes; use a comma, parentheses, a colon, or two sentences. A double hyphen (`--`) is the same construction and is also out. No "it's worth noting", "powerful", "seamless", or corporate filler.
 - No automation checklists. CI owns lint, types, and tests; checkboxes add zero signal.
 
 ## Sensitive Files

@@ -1,4 +1,10 @@
 {
+  "env": {
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001",
+    "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-opus-5"
+  },
   "attribution": {
     "commit": "",
     "pr": ""
@@ -139,9 +145,15 @@
       }
     }
   },
+  "outputStyle": "ls-jmvaldez-voice:direct",
   "effortLevel": "medium",
+  "agent": "chief-of-staff",
   "tui": "fullscreen",
   "theme": "dark",
   "skipAutoPermissionPrompt": true,
-  "outputStyle": "ls-jmvaldez-voice:direct"
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "high"
+    }
+  }
 }
