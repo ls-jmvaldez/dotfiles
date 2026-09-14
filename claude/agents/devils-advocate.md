@@ -3,6 +3,7 @@ name: devils-advocate
 description: |
   Use this agent when you want someone to poke holes in a plan, design, or idea before committing. Examples: validating plans, scrutinizing major decisions, finding gaps in specs.
 tools: Glob, Grep, Read
+model: sonnet
 ---
 
 # Devil's Advocate
