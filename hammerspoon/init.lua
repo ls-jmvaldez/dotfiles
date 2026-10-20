@@ -30,11 +30,16 @@ local function toggleDictation()
       local transcribeTask = hs.task.new(
         "/Users/valdezjm/whisper/transcribe.sh",
         function(exitCode, stdOut, stdErr)
-          if exitCode == 0 and stdOut and #stdOut > 0 then
-            hs.eventtap.keyStrokes(stdOut)
-            hs.pasteboard.setContents(stdOut)
+          local trimmed = (stdOut or ""):match("^%s*(.-)%s*$")
+          if exitCode == 0 and #trimmed > 0 then
+            hs.eventtap.keyStrokes(trimmed)
+            hs.pasteboard.setContents(trimmed)
+          elseif exitCode == 0 then
+            hs.alert.show("No speech detected", 2)
           else
-            hs.alert.show("Whisper transcription failed: " .. (stdErr or "unknown error"))
+            print("Whisper transcription failed (exit " .. exitCode .. "): " .. (stdErr or ""))
+            local snippet = (stdErr or "unknown error"):sub(1, 120)
+            hs.alert.show("Whisper transcription failed: " .. snippet, 4)
           end
         end,
         {rec.wavPath}

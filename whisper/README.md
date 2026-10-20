@@ -60,11 +60,17 @@ Without Accessibility or Input Monitoring, failure is silent. Without Microphone
 
 To check: open System Settings > Privacy & Security > each category and confirm Hammerspoon is listed and enabled.
 
-### 4. Empty recording treated the same as a crash
+### 4. Empty recording vs. a crash (fixed)
 
-An empty recording exits 0 with empty stdout. The callback in init.lua treats this as a failed transcription and shows the error alert. This is a known sharp edge that is not yet fixed.
+The callback now handles three outcomes:
 
-If you see the "Whisper transcription failed" alert but suspect you just did not speak, check whether `/tmp/whisper-dictation.wav` exists and has content above 44 bytes (the WAV header size). If it is 44 bytes, sox captured nothing. See permissions above.
+1. **Success**: exit 0, non-empty transcript. Text is typed and copied to the clipboard.
+2. **No speech detected**: exit 0, empty or whitespace-only stdout. Shows "No speech detected" for 2 seconds. This means sox captured silence, mlx_whisper produced nothing, or the mic was muted. No alarm, no stderr noise.
+3. **Real failure**: non-zero exit. Shows a truncated (120 character) excerpt of stderr for 4 seconds. The full stderr and exit code are printed to the Hammerspoon console (`hs.openConsole()`) for inspection.
+
+Note: mlx_whisper sometimes hallucinates "Thank you." on a silent recording and exits 0. In that case the text gets typed rather than triggering the silence branch. This is a model behavior, not a bug in the callback.
+
+If the silence alert appears and you believe the mic is live, check whether `/tmp/whisper-dictation.wav` exists and has content above 44 bytes (the WAV header size). If it is 44 bytes, sox captured nothing. See permissions above.
 
 ### 5. Stale or garbled audio
 
