@@ -2,6 +2,16 @@
 claude/skills/*/.venv/
 __pycache__/
 
+# Hammerspoon: third-party Spoon bundles are downloaded, not authored
+hammerspoon/Spoons/
+
+# Whisper: large Python virtualenv, generated audio, backups
+whisper/.venv/
+whisper/__pycache__/
+whisper/*.bak
+whisper/*.wav
+whisper/*.aiff
+
 # Third-party skills installed via the skill manager.
 # ~/.agents/.skill-lock.json is the source of truth; reinstall from there.
 # These symlinks are intentionally not committed.
