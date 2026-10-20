@@ -59,7 +59,38 @@ echo "$ROOT"
 If `$ROOT` is empty, the plugin isn't installed. Tell the user to run
 `claude plugin install internal-tools@legalshield-marketplace` and stop.
 
-## 4. Follow the plugin's router
+## 4. Before any page create: duplicate check
+
+Run this before calling `POST /api/v2/pages`, for any status (current or draft). It prevents
+duplicate drafts caused by timeout retries where the create succeeded server-side but the
+response was lost. Read `references/drafts.md` for the full draft API reference.
+
+```bash
+SPACE_KEY="~61b7a02191c049006fa846ee"  # swap for target space
+TITLE_ENC=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$TITLE")
+
+# Drafts — v2 space-pages does NOT list drafts; v1 required
+DRAFTS=$(curl -sS -H "Authorization: Basic $CONFLUENCE_AUTH_TOKEN" \
+  "https://legalshield.atlassian.net/wiki/rest/api/content?spaceKey=$SPACE_KEY&status=draft&type=page&title=$TITLE_ENC&limit=50")
+
+# Current pages
+CURRENT=$(curl -sS -H "Authorization: Basic $CONFLUENCE_AUTH_TOKEN" \
+  "https://legalshield.atlassian.net/wiki/rest/api/content?spaceKey=$SPACE_KEY&status=current&type=page&title=$TITLE_ENC&limit=50")
+
+echo "Drafts:"; echo "$DRAFTS" | python3 -I -c "import json,sys; [print(f'  id={r[\"id\"]}  {r[\"title\"]}  status={r[\"status\"]}') for r in json.load(sys.stdin).get('results',[])]"
+echo "Current:"; echo "$CURRENT" | python3 -I -c "import json,sys; [print(f'  id={r[\"id\"]}  {r[\"title\"]}  status={r[\"status\"]}') for r in json.load(sys.stdin).get('results',[])]"
+```
+
+**Decision rules:**
+
+| Lookup result | Action |
+|---|---|
+| No matches | Proceed to create. |
+| Match(es) exist | Report every ID and URL. Do NOT create. If the caller asked to update, update the existing page. Otherwise stop and ask. |
+| After a create error or timeout | Re-run this lookup before retrying — the create may have landed. |
+| After a successful create | Re-run this lookup. Confirm exactly one result. Report every ID found. |
+
+## 5. Follow the plugin's router
 
 Read `$ROOT/skills/confluence/SKILL.md` and follow it exactly, with three substitutions:
 
