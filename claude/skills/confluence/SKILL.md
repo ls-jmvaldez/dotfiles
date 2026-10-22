@@ -21,7 +21,7 @@ base64-encode `email:token` into `$CONFLUENCE_AUTH_TOKEN`. If it's unset:
 ```bash
 if [ -z "$CONFLUENCE_AUTH_TOKEN" ]; then
   ATLASSIAN_EMAIL='joevaldez@pplsi.com'
-  ATLASSIAN_TOKEN="$(op read 'op://PPLSI/Confluence API Token/credential' 2>/dev/null)"
+  ATLASSIAN_TOKEN="$(op-cached 'op://PPLSI/Confluence API Token/credential' 2>/dev/null)"
   [ -n "$ATLASSIAN_TOKEN" ] && export CONFLUENCE_AUTH_TOKEN="$(printf '%s:%s' "$ATLASSIAN_EMAIL" "$ATLASSIAN_TOKEN" | base64 | tr -d '\n')"
 fi
 [ -z "$CONFLUENCE_AUTH_TOKEN" ] && echo "no token — run: op signin (or confluence-auth)" || \

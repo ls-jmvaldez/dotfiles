@@ -105,7 +105,7 @@ Repos depending on private `@legalshield/*` packages need registry auth. **Alway
 the token before any npm work** (it has `read:packages`; the plain `gh` token does not):
 
 ```bash
-export GIT_PERSONAL_ACCESS_TOKEN="$(op read 'op://Personal/GIT_PERSONAL_ACCESS_TOKEN/credential')"
+export GIT_PERSONAL_ACCESS_TOKEN="$(op-cached 'op://Personal/GIT_PERSONAL_ACCESS_TOKEN/credential')"
 ```
 
 Without it, `npm install` 403s on the private tarballs and **rolls back, leaving a

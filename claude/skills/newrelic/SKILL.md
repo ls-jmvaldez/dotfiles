@@ -30,7 +30,7 @@ plugin is vault-agnostic and won't inject them; do it here. If unset, pull the k
 1Password and set the account ID:
 
 ```bash
-[ -z "$NEW_RELIC_API_KEY" ] && export NEW_RELIC_API_KEY="$(op read 'op://PPLSI/NewRelic CLI/credential' 2>/dev/null)"
+[ -z "$NEW_RELIC_API_KEY" ] && export NEW_RELIC_API_KEY="$(op-cached 'op://PPLSI/NewRelic CLI/credential' 2>/dev/null)"
 export NEW_RELIC_ACCOUNT_ID="${NEW_RELIC_ACCOUNT_ID:-124794}"
 [ -z "$NEW_RELIC_API_KEY" ] && echo "no NR API key — run: op signin (or nr-auth)" || echo "NerdGraph creds present"
 ```

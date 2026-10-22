@@ -22,8 +22,8 @@ Arguments: $ARGUMENTS
 ## 1. Auth (owned here)
 
 ```bash
-[ -z "$JIRA_AUTH_TOKEN" ] && export JIRA_AUTH_TOKEN="$(op read 'op://PPLSI/Jira - Base64/credential' 2>/dev/null)"
-[ -z "$NEW_RELIC_API_KEY" ] && export NEW_RELIC_API_KEY="$(op read 'op://PPLSI/NewRelic CLI/credential' 2>/dev/null)"
+[ -z "$JIRA_AUTH_TOKEN" ] && export JIRA_AUTH_TOKEN="$(op-cached 'op://PPLSI/Jira - Base64/credential' 2>/dev/null)"
+[ -z "$NEW_RELIC_API_KEY" ] && export NEW_RELIC_API_KEY="$(op-cached 'op://PPLSI/NewRelic CLI/credential' 2>/dev/null)"
 export NEW_RELIC_ACCOUNT_ID="${NEW_RELIC_ACCOUNT_ID:-124794}"
 [ -z "$JIRA_AUTH_TOKEN" ] && echo "no Jira token — run: op signin" || echo "jira ok"
 [ -z "$NEW_RELIC_API_KEY" ] && echo "no NR key — run: op signin" || echo "nr ok"

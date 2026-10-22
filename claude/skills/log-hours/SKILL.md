@@ -34,7 +34,7 @@ sitting in a **worked** status (default: `Done`, `IN UAT STATUS`, `Code Review`,
 The script reads `JIRA_AUTH_TOKEN` from the environment. Export it from 1Password first:
 
 ```bash
-[ -z "$JIRA_AUTH_TOKEN" ] && export JIRA_AUTH_TOKEN="$(op read 'op://PPLSI/Jira - Base64/credential' 2>/dev/null)"
+[ -z "$JIRA_AUTH_TOKEN" ] && export JIRA_AUTH_TOKEN="$(op-cached 'op://PPLSI/Jira - Base64/credential' 2>/dev/null)"
 [ -z "$JIRA_AUTH_TOKEN" ] && echo "no token — run: op signin, or export JIRA_AUTH_TOKEN manually" || echo "token present"
 ```
 

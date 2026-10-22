@@ -1,0 +1,59 @@
+#!/bin/sh
+# op-cached: thin TTL cache wrapper around op read.
+#
+# Usage: op-cached op://Vault/Item/field
+#
+# Caches the credential in ${TMPDIR:-/tmp}/op-cache-$UID/ for OP_CACHE_TTL_MIN
+# minutes (default 15) so repeated calls within the window skip the 1Password
+# biometric prompt. Claude Code Bash calls have no TTY, so every bare `op read`
+# triggers a prompt; this avoids that on cache hits.
+#
+# Cache invalidation: remove the cache file to force a fresh fetch.
+#   rm -f "${TMPDIR:-/tmp}/op-cache-$(id -u)/<sha256-of-ref>"
+# Or set OP_CACHE_TTL_MIN=0 to disable caching for a single call.
+#
+# If op read fails, exits nonzero without writing an empty cache file.
+# Cache dir: mode 700. Cache files: mode 600. Writes are atomic (tmp + mv).
+
+export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
+
+REF="${1:?op-cached: usage: op-cached op://Vault/Item/field}"
+TTL="${OP_CACHE_TTL_MIN:-15}"
+
+CACHE_DIR="${TMPDIR:-/tmp}/op-cache-${UID:-$(id -u)}"
+umask 077
+mkdir -p "$CACHE_DIR"
+chmod 700 "$CACHE_DIR"
+
+# Cache key: sha256 of the ref string (avoids special chars in filename)
+if command -v sha256sum >/dev/null 2>&1; then
+  KEY=$(printf '%s' "$REF" | sha256sum | awk '{print $1}')
+else
+  KEY=$(printf '%s' "$REF" | shasum -a 256 | awk '{print $1}')
+fi
+CACHE_FILE="$CACHE_DIR/$KEY"
+
+# Cache hit: file is non-empty and not older than TTL minutes
+if [ -s "$CACHE_FILE" ] && [ -z "$(find "$CACHE_FILE" -mmin "+$TTL" 2>/dev/null)" ]; then
+  cat "$CACHE_FILE"
+  exit 0
+fi
+
+# Cache miss: fetch from 1Password
+TMPF="${CACHE_FILE}.$$"
+if ! op read "$REF" > "$TMPF" 2>/dev/null; then
+  rm -f "$TMPF"
+  printf 'op-cached: op read failed for %s\n' "$REF" >&2
+  exit 1
+fi
+
+# Guard against empty results (e.g. item exists but field is blank)
+if [ ! -s "$TMPF" ]; then
+  rm -f "$TMPF"
+  printf 'op-cached: op read returned empty result for %s\n' "$REF" >&2
+  exit 1
+fi
+
+mv "$TMPF" "$CACHE_FILE"
+chmod 600 "$CACHE_FILE"
+cat "$CACHE_FILE"

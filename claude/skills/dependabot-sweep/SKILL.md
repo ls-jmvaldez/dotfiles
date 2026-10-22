@@ -30,7 +30,7 @@ The Jira plugin is vault-agnostic and will not inject a token. Do it here, exact
 the `jira` skill does. If `$JIRA_AUTH_TOKEN` is unset, export it from 1Password:
 
 ```bash
-[ -z "$JIRA_AUTH_TOKEN" ] && export JIRA_AUTH_TOKEN="$(op read 'op://PPLSI/Jira - Base64/credential' 2>/dev/null)"
+[ -z "$JIRA_AUTH_TOKEN" ] && export JIRA_AUTH_TOKEN="$(op-cached 'op://PPLSI/Jira - Base64/credential' 2>/dev/null)"
 [ -z "$JIRA_AUTH_TOKEN" ] && echo "no token — run: op signin, or export JIRA_AUTH_TOKEN manually" || echo "token present"
 ```
 
@@ -58,7 +58,7 @@ a `read:packages` token — the `gh` token does **not** have it. Export it here 
 inherit it, and pass it in each agent's task:
 
 ```bash
-export GIT_PERSONAL_ACCESS_TOKEN="$(op read 'op://Personal/GIT_PERSONAL_ACCESS_TOKEN/credential')"
+export GIT_PERSONAL_ACCESS_TOKEN="$(op-cached 'op://Personal/GIT_PERSONAL_ACCESS_TOKEN/credential')"
 ```
 
 Without it, `npm install` rolls back on a 403 and commits a lockfile `npm ci` (and CI)

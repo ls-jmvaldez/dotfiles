@@ -52,7 +52,7 @@ Run all four. Halt with a clear error if any fail.
 gh auth status >/dev/null 2>&1 || { echo "✗ run 'gh auth login'"; exit 1; }
 
 # 2. 1Password CLI signed in (op read works)
-op read 'op://PPLSI/Jira - Base64/credential' >/dev/null 2>&1 \
+op-cached 'op://PPLSI/Jira - Base64/credential' >/dev/null 2>&1 \
   || { echo "✗ run 'op signin' in this terminal"; exit 1; }
 
 # 3. Repo has at least one deploy/prod/* tag (else there's nothing to backfill against)
@@ -68,8 +68,8 @@ test ! -f .github/workflows/confluence-release-notes.yml \
 ## Step 2: Resolve Atlassian token
 
 ```bash
-TOKEN="$(op read 'op://PPLSI/Confluence - Base64/credential' 2>/dev/null)"
-[ -z "$TOKEN" ] && TOKEN="$(op read 'op://PPLSI/Jira - Base64/credential' 2>/dev/null)"
+TOKEN="$(op-cached 'op://PPLSI/Confluence - Base64/credential' 2>/dev/null)"
+[ -z "$TOKEN" ] && TOKEN="$(op-cached 'op://PPLSI/Jira - Base64/credential' 2>/dev/null)"
 [ -z "$TOKEN" ] && { echo "✗ no Atlassian token in 1Password"; exit 1; }
 ```
 
