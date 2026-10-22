@@ -15,6 +15,9 @@ whisper/*.aiff
 # Third-party skills installed via the skill manager.
 # ~/.agents/.skill-lock.json is the source of truth; reinstall from there.
 # These symlinks are intentionally not committed.
+# synced/ holds skills downloaded by the Anthropic skill sync; .trash/ holds ones removed.
+claude/skills/synced/
+claude/skills/.trash/
 claude/skills/ask-matt
 claude/skills/claude-handoff
 claude/skills/code-review
