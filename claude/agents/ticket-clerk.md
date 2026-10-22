@@ -30,5 +30,10 @@ the caller judge.
 
 ## If auth fails
 
-A 401 usually means the 1Password session expired, not that the ticket is missing. Say so
-plainly and stop, rather than retrying and burning turns.
+Jira returns **404** for a bad or missing auth token, not 401 or 403. A 404 response does
+not mean the ticket is missing. Re-verify the token before claiming a ticket does not exist.
+
+`op whoami` reporting "account is not signed in" is not a failure. The 1Password desktop
+integration still serves `op read` without a CLI session. Do not stop or warn on `op
+whoami` output. The only condition that requires `op signin` is a genuinely empty result
+from `op read 'op://PPLSI/Jira - Base64/credential'`.

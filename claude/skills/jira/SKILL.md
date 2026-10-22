@@ -19,8 +19,17 @@ The plugin is vault-agnostic and will not inject a token. Do it here. If
 
 ```bash
 [ -z "$JIRA_AUTH_TOKEN" ] && export JIRA_AUTH_TOKEN="$(op-cached 'op://PPLSI/Jira - Base64/credential' 2>/dev/null)"
-[ -z "$JIRA_AUTH_TOKEN" ] && echo "no token — run: op signin, or export JIRA_AUTH_TOKEN manually" || echo "token present"
+[ -z "$JIRA_AUTH_TOKEN" ] && echo "no token — run: op signin, or export JIRA_AUTH_TOKEN manually" || echo "token present (length: ${#JIRA_AUTH_TOKEN})"
 ```
+
+`op read` works via the 1Password desktop app's biometric integration even when `op
+whoami` reports "account is not signed in". Do not gate on `op whoami`; it is not a valid
+signal here. A genuinely empty `op read` result is the only condition that requires `op
+signin`.
+
+**404 on API calls does not mean the ticket is missing.** Jira returns 404 for a bad or
+missing auth token, which looks identical to a deleted issue key. If you see 404, verify
+the token is non-empty before concluding the ticket does not exist.
 
 ## 2. Resolve the plugin root
 
