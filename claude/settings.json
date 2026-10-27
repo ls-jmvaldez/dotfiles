@@ -1,9 +1,8 @@
 {
   "env": {
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5",
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001",
-    "ANTHROPIC_DEFAULT_FABLE_MODEL": "claude-opus-5"
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001"
   },
   "attribution": {
     "commit": "",
@@ -54,7 +53,8 @@
       "Bash(basename:*)",
       "Bash(dirname:*)",
       "Bash(ln:*)",
-      "Bash(op-cached:*)"
+      "Bash(op-cached:*)",
+      "Agent"
     ],
     "deny": [
       "Read(.env)",
@@ -149,7 +149,7 @@
   "outputStyle": "ls-jmvaldez-voice:direct",
   "effortLevel": "medium",
   "modelSettings": {
-    "claude-opus-5": {
+    "claude-opus-5-5": {
       "effortLevel": "high"
     }
   },
@@ -160,39 +160,39 @@
   "autoMode": {
     "allow": [
       "$defaults",
-      "Bash(op read:*) # 1Password CLI secret reads are routine in this project (op used 9x in transcripts, 8x in shell history) — covered by Standard Credentials default only for env injection; explicit reads via op CLI are a common local workflow pattern",
-      "Bash(kubectl get:*) # kubectl read-only inspection of cluster state — kubectl observed 2x in project transcripts for namespace-scoped operations"
+      "Bash(op read:*) # 1Password CLI secret reads are routine in this project (op used 9x in transcripts, 8x in shell history) \u2014 covered by Standard Credentials default only for env injection; explicit reads via op CLI are a common local workflow pattern",
+      "Bash(kubectl get:*) # kubectl read-only inspection of cluster state \u2014 kubectl observed 2x in project transcripts for namespace-scoped operations"
     ],
     "soft_deny": [
       "$defaults",
-      "Bash(pnpm *-prod*) # pnpm scripts connecting to production upstream (membership-details-prod, provider-resolutions-prod, membership-details-uat:prod, provider-resolutions-uat:prod) — these hit live production data even if read-only per CLAUDE.md",
+      "Bash(pnpm *-prod*) # pnpm scripts connecting to production upstream (membership-details-prod, provider-resolutions-prod, membership-details-uat:prod, provider-resolutions-uat:prod) \u2014 these hit live production data even if read-only per CLAUDE.md",
       "Bash(kubectl * -n *prod*) # kubectl commands targeting any namespace with prod in the name"
     ],
     "environment": [
       "### Org-wide",
       "**Organization**: LegalShield (GitHub org: LegalShield)",
       "**Cloud provider(s)**: AWS (BUILD_PIPELINE_AWS_ACCESS_KEY_ID/SECRET referenced in CI); Rancher/Kubernetes for deployment",
-      "**Repository visibility**: Private — LegalShield/internal-membership-web confirmed private via gh API",
-      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
-      "**Secrets management**: 1Password CLI (op) — used in project transcripts (9×) and shell history (8×); CI secrets via GitHub Actions secrets",
-      "**Default / protected branches**: main — protected via active ruleset (gh API confirmed)",
+      "**Repository visibility**: Private \u2014 LegalShield/internal-membership-web confirmed private via gh API",
+      "**Internal sharing / snippet hosting**: None configured \u2014 treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: 1Password CLI (op) \u2014 used in project transcripts (9\u00d7) and shell history (8\u00d7); CI secrets via GitHub Actions secrets",
+      "**Default / protected branches**: main \u2014 protected via active ruleset (gh API confirmed)",
       "**CI/CD deploy targets**: Rancher/Kubernetes (East cluster); deploy via rdeploy; environments: DEV, UAT, PROD. CI workflows under .github/workflows/. RANCHER_EAST_BEARER, RANCHER_EAST_KEY, RANCHER_EAST_SECRET, RANCHER_PROD_BEARER are the deploy credentials.",
       "**Network posture**: None configured",
-      "**Host containment**: None configured — Claude Code runs on an ordinary developer machine with open internet; Caddy reverse proxy used locally for HTTPS (infra/ dir)",
-      "**Source control**: LegalShield/internal-membership-web on github.com and its configured remotes only — private repo",
-      "**Trusted internal domains**: legalshield.atlassian.net (Jira — 1× in transcripts); dev-legalshieldinternal.com; uat-legalshieldinternal.com",
+      "**Host containment**: None configured \u2014 Claude Code runs on an ordinary developer machine with open internet; Caddy reverse proxy used locally for HTTPS (infra/ dir)",
+      "**Source control**: LegalShield/internal-membership-web on github.com and its configured remotes only \u2014 private repo",
+      "**Trusted internal domains**: legalshield.atlassian.net (Jira \u2014 1\u00d7 in transcripts); dev-legalshieldinternal.com; uat-legalshieldinternal.com",
       "**Trusted cloud buckets**: None configured",
-      "**Key internal services**: New Relic (observability — NEW_RELIC_API_KEY, NEW_RELIC_USER_API_KEY); LaunchDarkly (feature flags — LAUNCHDARKLY_SDK_KEY); Atlassian/Jira (ATLASSIAN_BASIC_AUTH, JIRA_BASIC_AUTH); MS Teams (MSTEAMS_DEVOPS_UPDATES); PagerDuty (PAGERDUTY_INTEGRATION_KEY); AR Identities service (AR_IDENTITIES_KEY/SECRET)",
-      "**Internal package registry**: npm.pkg.github.com — GitHub Packages for @legalshield/* and @internal-membership-web/* scopes",
+      "**Key internal services**: New Relic (observability \u2014 NEW_RELIC_API_KEY, NEW_RELIC_USER_API_KEY); LaunchDarkly (feature flags \u2014 LAUNCHDARKLY_SDK_KEY); Atlassian/Jira (ATLASSIAN_BASIC_AUTH, JIRA_BASIC_AUTH); MS Teams (MSTEAMS_DEVOPS_UPDATES); PagerDuty (PAGERDUTY_INTEGRATION_KEY); AR Identities service (AR_IDENTITIES_KEY/SECRET)",
+      "**Internal package registry**: npm.pkg.github.com \u2014 GitHub Packages for @legalshield/* and @internal-membership-web/* scopes",
       "**Sensitive data locations & audiences**: Member profile data, billing records, and personally identifiable member information handled by int-membership-details and int-provider-resolutions apps; .env.*.local files under apps/int-membership-details/ and apps/int-provider-resolutions/ (gitignored, contain real credentials); CI secret store (GitHub Actions); share only with audiences cleared at the named+specifics bar",
       "**Data retention / declassification**: None configured",
-      "**Sensitive remote targets**: Any namespace, host, or path carrying prod or production as a whole word or name segment; specifically: membership-details-local.uat-legalshieldinternal.com, RANCHER_PROD_BEARER target cluster, pnpm scripts *-prod (membership-details-prod, provider-resolutions-prod) — these connect to production upstream read-only per CLAUDE.md but are still production targets",
+      "**Sensitive remote targets**: Any namespace, host, or path carrying prod or production as a whole word or name segment; specifically: membership-details-local.uat-legalshieldinternal.com, RANCHER_PROD_BEARER target cluster, pnpm scripts *-prod (membership-details-prod, provider-resolutions-prod) \u2014 these connect to production upstream read-only per CLAUDE.md but are still production targets",
       "**Protected deployment namespaces / environments**: Rancher/Kubernetes prod cluster (RANCHER_PROD_BEARER); UAT cluster (RANCHER_EAST_BEARER scope); k8s namespaces observed: preview, manager, font-stack",
       "**Protected IaC scopes**: IAM/RBAC resources; Rancher cluster configuration; any resource whose name carries prod or production as a whole word or name segment",
       "### User-specific",
-      "**Primary use of Claude Code**: Full-stack TypeScript/React development on internal-membership-web — a pnpm 10 monorepo with Next.js 15 App Router apps (int-membership-details, int-provider-resolutions), shared packages, and Playwright E2E tests",
-      "**Trusted repo**: LegalShield/internal-membership-web (private) at github.com — working directory and its configured origin remote",
-      "**Org-specific CLIs**: op (1Password CLI — secrets retrieval, 9× in transcripts, 8× in shell history); kubectl (Kubernetes cluster operations, 2× in transcripts); rdeploy (deployment tooling referenced in README)",
+      "**Primary use of Claude Code**: Full-stack TypeScript/React development on internal-membership-web \u2014 a pnpm 10 monorepo with Next.js 15 App Router apps (int-membership-details, int-provider-resolutions), shared packages, and Playwright E2E tests",
+      "**Trusted repo**: LegalShield/internal-membership-web (private) at github.com \u2014 working directory and its configured origin remote",
+      "**Org-specific CLIs**: op (1Password CLI \u2014 secrets retrieval, 9\u00d7 in transcripts, 8\u00d7 in shell history); kubectl (Kubernetes cluster operations, 2\u00d7 in transcripts); rdeploy (deployment tooling referenced in README)",
       "**Routine under user prefix**: pnpm -w and pnpm -r workspace commands are the standard invocation pattern for this monorepo; all listed package.json scripts (membership-details-*, provider-resolutions-*, arch:check, security:check-*) are routine"
     ]
   }
