@@ -44,7 +44,7 @@ An unentitled but recognized model alias is dropped silently. There is no error.
 just runs on the session default at the session default's price. So never assume a tier
 exists.
 
-Available on this account as of 2026-09-01: `opus` (claude-opus-5), `sonnet`
+Available on this account as of 2026-10-26: `opus` (claude-opus-5-5), `sonnet`
 (claude-sonnet-4-6), `haiku` (claude-haiku-4-5). Sonnet 5 and Fable were removed in
 mid-August 2026.
 
