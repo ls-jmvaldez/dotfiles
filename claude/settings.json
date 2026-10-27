@@ -85,6 +85,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "bash ~/.claude/hooks/git-hook-bypass.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
             "command": "bash ~/.claude/hooks/worktree-conflict.sh",
             "timeout": 10
           },
