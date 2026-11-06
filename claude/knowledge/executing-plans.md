@@ -95,7 +95,7 @@ Once the last phase ships its PR:
 
 - Flip status to `COMPLETED`
 - Move the plan file to `plans/done/<same-name>.md`
-- Summary report: plan path, all PR URLs, all branches
+- Summary report: plan path, all PR URLs, all branches, and the visual evidence per PR (Step 7 of the execute skill)
 
 ## Failure Handling
 

@@ -63,6 +63,7 @@ Arguments: $ARGUMENTS (Optional base branch. Default: main or master)
 - Lead with *why*, not *what*. Don't restate the diff as bullets.
 - Manual test steps = what a human clicks through. Number happy path, bullet independent edges. For non-UI PRs, frame as smoke tests.
 - Screenshots live in the PR, not the ticket. Skip for non-UI PRs.
+- UI change with no evidence yet: capture it per `~/.claude/knowledge/capturing-visual-evidence.md` before writing this section.
 - **No automation checklists.** No "☐ Unit tests pass," "☐ Lint green," "☐ Types clean," "☐ Added tests." CI owns these; checkboxes add zero signal.
 - No em dashes. No "it's worth noting," "seamless," "powerful," or corporate filler.
 - Short paragraphs, 3-4 sentences max. No bullet soup.

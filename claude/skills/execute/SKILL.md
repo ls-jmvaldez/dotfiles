@@ -110,13 +110,34 @@ Non-negotiable rules:
   branch. If it reports `main` (or any base branch), stop — the command is
   pointed at the wrong tree.
 
-## Step 7: Completion
+## Step 7: Capture visual evidence
 
-After every phase commits and pushes successfully:
+Reviewers judge a UI change faster from a picture than from a diff. For each PR from Step 6, decide whether it needs **evidence**, capture it from that PR's worktree, and hand the files to the user. Evidence is best-effort: a capture failure goes in the Step 8 report and never fails the plan.
+
+**Trigger.** A PR needs evidence when its phase section has an `**Evidence:**` line naming what to show. Without that line, it needs evidence when `git -C <worktree-path> diff --name-only <base>...HEAD` lists either:
+
+- a component, page, or style file (`.tsx`, `.jsx`, `.css`), excluding `*.test.*`, `*.spec.*`, and `*.stories.*`
+- a file whose output a component renders as text (a formatter, label map, or copy), as shown by the phase's manual test steps naming something visible
+
+A diff made only of server, BFF, service, test, docs, CI, or config files gets no evidence. `**Evidence:** none` in the phase skips it outright.
+
+**Dispatch.** Spawn one worker per PR that needs evidence, one at a time, since each boots its own dev server:
+
+- `subagent_type: general-purpose`, `model: sonnet`, `cwd: <worktree-path>`
+- Prompt: "Read `~/.claude/knowledge/capturing-visual-evidence.md` and follow it." Pass the worktree path, the ticket key (or `pr<N>` when the plan has none), the PR URL, the phase goal, its manual test steps, and its `**Evidence:**` line if present.
+
+**Done when** the worker returns a manifest: the evidence folder, each file's absolute path with a one-line caption, and its confirmation that it opened every file and the worktree's `git status` matches its pre-capture snapshot. Then write the `## Screenshots / videos` section of the PR body: one caption per file, in manifest order, each followed by the filename in backticks as the drop target. Fetch the current body with `gh pr view <url> --json body`, replace the section's placeholder if the body has one (otherwise append the section), and write it back with `gh pr edit <url> --body-file <scratch-file>`.
+
+GitHub has no upload API for PR images or video, so the upload stays with the user.
+
+## Step 8: Completion
+
+After every phase commits and pushes successfully and Step 7 has run:
 
 1. Flip plan status to `COMPLETED`.
 2. Move the plan file to `plans/done/<same-name>.md`.
 3. Report a summary: plan path, list of PR URLs, branch names.
+4. Report evidence per PR: the folder path and each file in drag order with its caption, ending with "Drag these into the PR's Screenshots / videos section, under the matching caption." For a PR without evidence, give the reason: no UI change, `**Evidence:** none`, or the capture failure.
 
 ## Failure handling
 
@@ -132,6 +153,7 @@ If any step fails:
 - **Auto-rebase stacked branches.** When a parent PR is updated, child PRs need manual rebase. A future `/stack` skill will handle this once we have concrete requirements.
 - **Auto-merge PRs.** Draft PRs are opened; merging stays manual.
 - **Run the test suite if the plan does not specify verify commands.** Verification is the plan's responsibility.
+- **Upload screenshots or video.** GitHub accepts PR media only through the web UI. Step 7 saves files under `~/Documents/claude-screenshots/` and the user drags them in.
 
 ## Key Principles
 
