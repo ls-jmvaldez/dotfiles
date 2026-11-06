@@ -20,8 +20,8 @@ Inputs from your caller: worktree path, ticket key (or `pr<N>`), PR URL, the cha
 ## Step 1: Snapshot and find the recipe
 
 1. Record `git -C <worktree> status --porcelain`. Step 5 restores to exactly this.
-2. Find the project's run skill: a `.claude/skills/run-*/SKILL.md` in the worktree or the primary checkout whose description covers launching the app. Read it and follow it verbatim for launch, auth, data, driving, and stop. Every repo-specific detail lives there.
-3. No run skill: invoke the `run` skill for its fallback pattern, and add "no project run skill" to the manifest.
+2. Find the run skill, first match wins: a personal `~/.claude/skills/run-<app>/SKILL.md` for the app this repo builds (here `run-membership-details`); then a `.claude/skills/run-*/SKILL.md` in the worktree or the primary checkout. Its description must cover launching the app. Read it and follow it verbatim for launch, auth, data, driving, and stop. Every app-specific detail lives there.
+3. No run skill: invoke the built-in `run` skill for its fallback pattern, and add "no project run skill" to the manifest.
 
 Done when you know the launch command, the ports you will use, how auth works, and where test data comes from.
 
