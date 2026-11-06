@@ -39,7 +39,7 @@ Write the shot list before launching anything. Name each shot by its subject: `b
 
 - Stills: an element shot of the changed component, plus one viewport shot when its surroundings matter. Viewport 1440x900, stills at 2x device scale. Light and dark for every still.
 - Video: light theme, one flow, under 30 seconds. Recording starts once the page is settled and stops about a second after the end state. H.264 `.mp4`, under 10MB.
-- "After" state only. The caption says what it looked like before.
+- "After" state only. Captions follow the rules in Step 6.
 
 Done when every item in the goal and manual test steps that a human would look at maps to a shot.
 
@@ -71,6 +71,23 @@ Done when the status matches the snapshot and every process you started is gone.
 In shot order:
 
 - the evidence folder's absolute path
-- per file: absolute path and a one-line caption a reviewer reads above it
+- per file: absolute path and a one-line caption a reviewer reads above it (rules below)
+- per `Before:` clause: its source, recorded in the manifest only, never in the caption
 - planned shots you could not capture, with the reason
 - confirmation that you opened every file and the worktree status matches the snapshot
+
+### Captions
+
+The main text describes only what the file shows: the component, the state, and the theme.
+
+Add `Before: "<old output>"` only when the old visible output is proven by one of these, and name which in the manifest:
+
+- the exact removed or changed lines in `git diff <base>...HEAD`, such as a removed string literal (source: diff line)
+- an existing test assertion on the base branch (source: test)
+- text the ticket or PR quotes as the bug, such as the ticket saying it renders "12 pay_periods" (source: ticket)
+
+When the old output was computed (a formatter or template literal) and the diff does not show it literally, derive it by running the base-branch function with the same input: a vitest one-off, or `git show <base>:<file>` read alongside the actual inputs (source: base-branch run). Without that run, omit `Before:`.
+
+Quote the old output exactly as it rendered, character for character. A paraphrase or an inference is a guess, and a guess is not proof.
+
+When unsure, omit `Before:`. A caption without it is complete; a wrong one is a defect.
