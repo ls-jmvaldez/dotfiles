@@ -2,26 +2,30 @@
 name: review
 description: Comprehensive code review of the current diff — angle fan-out, independent verification, ranked findings, plus manual test steps for the PR body
 model: sonnet
-argument-hint: "[medium|high|xhigh] [target or focus] [--comment]"
+argument-hint: "[light|medium|high|xhigh] [target or focus] [--comment]"
 ---
 
 Arguments: `$ARGUMENTS`
 
 Parse them as `[level] [target] [--comment]`:
 
-- **level** — the first token, if it is `medium`, `high`, or `xhigh`. Default `medium`.
+- **level** — the first token, if it is `light`, `medium`, `high`, or `xhigh`. An explicit
+  level always wins. Without one, Phase 0 computes it from the diff.
 - **target** — everything left after removing the level and flags. A PR number, branch,
   ref range, path, or free-form focus ("only the BFF routes", "focus on error handling").
   Empty means review the current branch.
 - **`--comment`** — post each finding as an inline PR comment (see Phase 4).
 
-| level | correctness finders | candidates each | verify | sweep | report cap |
+| level | eligible angles | candidates each | verify | sweep | report cap |
 | --- | --- | --- | --- | --- | --- |
+| `light` | one combined finder: A plus conventions | 4 | yes, one verifier for all candidates | no | 4 |
 | `medium` | A, B, C | 6 | yes | no | 8 |
 | `high` | A–F | 6 | yes | no | 10 |
 | `xhigh` | A–F | 8 | yes | yes | 15 |
 
-Every level also runs one cleanup finder and one conventions finder.
+"Eligible angles" are the angles the level allows; Phase 0 drops any whose condition is
+not met. `medium` and above also run one cleanup finder and one conventions finder.
+`light` has no cleanup finder; its combined finder covers the conventions check.
 
 Spawn all finders and verifiers as `subagent_type: code-reviewer`, `model: sonnet`.
 Issue every call for a phase in a single message so they run concurrently.
@@ -41,6 +45,55 @@ Establish the diff yourself before dispatching anything.
 5. List the CLAUDE.md files that govern the changed files: `~/.claude/CLAUDE.md`, the
    repo root, plus any `CLAUDE.md` / `CLAUDE.local.md` in a directory that is an
    ancestor of a changed file.
+6. Pick the level and the angles (below), then print the level line.
+
+### Level
+
+Skip the scoring when the user passed a level. Otherwise score the diff.
+
+**Size**: `git diff --numstat` over production files only (exclude tests, fixtures,
+snapshots, lockfiles, generated code, docs), added plus deleted lines.
+
+| production lines changed | points |
+| --- | --- |
+| under 100 | 0 |
+| 100 to 400 | 1 |
+| 400 to 1,000 | 2 |
+| over 1,000 | 3 |
+
+**Risk flags**: +1 each, max 3. A flag needs a changed file that triggers it; no
+citation, no flag.
+
+- data access: SQL, queries, migrations, ORM
+- money: amounts, charges, refunds, payments
+- auth, permissions, or personal data added to a response
+- concurrency, retries, idempotency, async ordering
+- external contract change: new or changed route, wire shape, shared contract package
+- date, time, or timezone math
+- shared infrastructure: core packages, DI/startup, middleware
+
+**Level**: `light` when no production lines changed (tests, docs, config only), or under
+30 production lines with no risk flags. Otherwise score 0 to 1 = `medium`, 2 to 3 =
+`high`, 4 or more = `xhigh`. Anchors: a 1,400-line PR adding SQL, timezone math, and new
+routes scores 3 + 3 = 6, so `xhigh`; a one-line config tweak is `light`.
+
+### Angles
+
+At `medium` and above, run an angle only when it has something to look at:
+
+- A, C, D, cleanup, conventions: always (conventions returns nothing when no CLAUDE.md
+  applies).
+- B: only when the diff deletes or replaces lines in production code.
+- E: only when the diff adds or changes a type that wraps, adapts, translates, caches, or
+  proxies another.
+- F: only when the diff touches money, idempotent mutations, LaunchDarkly flags, or New
+  Relic/observability code.
+
+Print one line before dispatching anything, listing every skipped angle with its reason:
+
+`Level: xhigh (score 6: 1,412 prod lines; SQL, timezone, new API contract). Skipped angles: E (no wrappers).`
+
+For an explicit level, print `Level: high (explicit).` plus the skipped angles.
 
 Pass every finder and verifier the same scope block: diff command, changed file list,
 CLAUDE.md paths, the one-paragraph summary, and the verbatim target when there was one.
@@ -51,16 +104,20 @@ If the diff is empty, say so and stop.
 
 ## Phase 1 — Find candidates
 
-Each finder gets the scope block, exactly one angle, and no knowledge of the others.
+Each finder gets the scope block, exactly one angle (at `light`, the one combined
+finder gets A plus the conventions check), and no knowledge of the others.
 Each returns up to the per-level candidate budget as `file`, `line`, a one-line
-`summary`, and a concrete `failure_scenario` — the user-visible consequence (wrong
+`summary`, a concrete `failure_scenario` — the user-visible consequence (wrong
 amount charged, 500 on checkout, member locked out), not an intermediate state
-("value is stale", "set grows").
+("value is stale", "set grows") — and a `trigger_source`:
 
-**Pass every candidate through that has a nameable failure scenario.** Do not let
-finders drop half-believed candidates — an independent verifier judges them next, and
-finder-side suppression is the dominant cause of missed bugs. If two angles flag the
-same line for different reasons, keep both.
+- `input`: name the caller and the request or argument that triggers it.
+- `data`: name the writer that produces the triggering value, or the evidence it exists.
+
+**Pass every candidate through that has a nameable failure scenario and a
+`trigger_source`.** Do not let finders drop half-believed candidates — an independent
+verifier judges them next, and finder-side suppression is the dominant cause of missed
+bugs. If two angles flag the same line for different reasons, keep both.
 
 ### Angle A — line-by-line diff scan
 
@@ -146,31 +203,65 @@ applies.
 
 ## Phase 2 — Verify
 
-Group the pooled candidates by `(file, line)` and run **one verifier per location**,
-returning one verdict per candidate at that location. Judge each candidate
+Group the pooled candidates by `(file, line)` and run **one verifier per location**
+(at `light`, one verifier for all candidates), returning one verdict per candidate at
+that location. Judge each candidate
 independently on its own claim — candidates at the same line may be the same issue,
 distinct issues, or a mix. Reference each by its index.
 
-Each verdict is exactly one of:
+Each verdict is exactly one of these four:
 
 - **CONFIRMED** — can name the inputs or state that trigger it and the wrong output or
-  crash. Quote the line.
-- **PLAUSIBLE** — mechanism is real, trigger is uncertain (timing, env, config). State
-  what would confirm it.
-- **REFUTED** — factually wrong, or guarded elsewhere. Quote the line that proves it.
+  crash. Quote the line. The trigger must be reachable (below).
+- **PLAUSIBLE** — mechanism is real, timing, env, or config is uncertain. State
+  what would confirm it. The trigger must be reachable (below).
+- **REFUTED** — factually wrong, guarded elsewhere, or unreachable. Quote the line that
+  proves it.
+- **UNVERIFIED**: the mechanism is real and the triggering data is realistic, but the
+  check that would settle whether it exists could not be run in this review. State the
+  mechanism (quote the line), what data would trigger it, and the exact check that would
+  settle it (schema lookup or query, and which environment).
 
-**PLAUSIBLE by default.** Do not refute a candidate for being "speculative" or
-"depends on runtime state" when the state is realistic: concurrency races,
-null on a rare-but-reachable path (error handler, cold cache, missing optional field),
-falsy-zero treated as missing, off-by-one on a boundary the code does not exclude,
-retry storms and partial failures, a regex or allowlist that lost an anchor.
+**Reachable trigger.** CONFIRMED and PLAUSIBLE both need one of: an input a real caller
+can send, or data the system or a known writer actually produces (or that has been
+observed in real data). A trigger that needs input no caller can send, or data no writer
+produces and nobody has observed, is unreachable: REFUTED.
 
-REFUTE only when you can construct it from the code: factually wrong (quote the line),
-provably impossible (show the type, constant, or invariant), already handled in this
-diff (cite the guard), or pure style with no observable effect.
+**PLAUSIBLE by default for realistic runtime conditions.** Do not refute a candidate for
+being "speculative" or "depends on runtime state" when the state is realistic:
+concurrency races, retries and partial failures, null on a rare-but-reachable path
+(error handler, cold cache, missing optional field), falsy-zero treated as missing,
+off-by-one or boundary values a caller can send, a regex or allowlist that lost an
+anchor.
 
-Keep CONFIRMED and PLAUSIBLE. Drop REFUTED. A candidate no verifier rendered a verdict
-on is dropped — never promote an unverified candidate to PLAUSIBLE yourself.
+That protection does not extend to speculative data shapes. These are unreachable and
+get REFUTED:
+
+- a 9999-12-31 sentinel in creation or update timestamp columns the system stamps with
+  the current time (it is 2026; a creation stamp is never year 9999)
+- NULL in a column the schema declares NOT NULL
+- a leading blank inside a CHAR(1) code
+- an identity id above 99,999,999,999
+- a missing timezone database in a base image that ships it
+
+Contrast two findings from the same review that were correctly kept: comment lines split
+across a second boundary (the service's own writer produces this, and DEV data showed it
+on 6 of 213 records), and a `submittedTo`-only search returning an empty window (any
+caller can send that query).
+
+When a verdict depends on whether data exists, name the check that would settle it
+(schema lookup, a query) and run it before reporting the finding. If the check cannot be
+run in this review, return UNVERIFIED, not PLAUSIBLE. A speculative shape from the list
+above stays REFUTED; UNVERIFIED is only for a realistic trigger whose presence in real
+data could not be checked.
+
+Otherwise REFUTE only when you can construct it from the code: factually wrong (quote
+the line), provably impossible (show the type, constant, or invariant), already handled
+in this diff (cite the guard), or pure style with no observable effect.
+
+Keep CONFIRMED and PLAUSIBLE as findings. Drop REFUTED. Set UNVERIFIED aside for the
+Needs-data section in Phase 4; it is not a finding. A candidate no verifier rendered a
+verdict on is dropped; never promote it to PLAUSIBLE yourself.
 
 ## Phase 3 — Sweep (`xhigh` only)
 
@@ -199,6 +290,12 @@ When the `ReportFindings` tool is not available, print the findings as a ranked 
 instead, each with file, line, short summary, failure scenario, category, and verdict.
 
 Then, in prose after the tool call:
+
+**Needs data to verify**: the UNVERIFIED candidates, after the findings and after the
+`ReportFindings` call or its fallback list. One bullet each: `file:line`, the claim in
+one line, and the check that settles it (query or schema lookup, and which environment).
+They do not count toward the cap, are not ranked with findings, are not passed to
+`ReportFindings`, and `--comment` never posts them. Omit the section when there are none.
 
 **Manual test steps** — numbered, user-observable behaviors a human clicks through to
 verify this change, each with its expected outcome. This feeds the PR body, so write
@@ -236,6 +333,7 @@ review someone acts on and one they skim.
 - Changes that are obviously intentional and part of the broader change.
 - Issues silenced deliberately in the code (a lint-ignore comment, a documented
   exception).
+- Defensive handling for inputs or data no real path produces.
 
 ## After the review
 
