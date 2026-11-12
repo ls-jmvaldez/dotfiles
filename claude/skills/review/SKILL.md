@@ -1,7 +1,6 @@
 ---
 name: review
 description: Comprehensive code review of the current diff — angle fan-out, independent verification, ranked findings, plus manual test steps for the PR body
-context: fork
 model: sonnet
 argument-hint: "[medium|high|xhigh] [target or focus] [--comment]"
 ---
@@ -26,6 +25,7 @@ Every level also runs one cleanup finder and one conventions finder.
 
 Spawn all finders and verifiers as `subagent_type: code-reviewer`, `model: sonnet`.
 Issue every call for a phase in a single message so they run concurrently.
+Workers report only and never post to GitHub; only Phase 4's `--comment` step posts.
 
 ## Phase 0 — Scope
 
@@ -195,6 +195,9 @@ consequence clause), `failure_scenario`, `category` (a kebab-case slug — `corr
 specific like `idempotency`), and `verdict`. If nothing survived, call it with an empty
 array. Do not also print the findings as text.
 
+When the `ReportFindings` tool is not available, print the findings as a ranked list
+instead, each with file, line, short summary, failure scenario, category, and verdict.
+
 Then, in prose after the tool call:
 
 **Manual test steps** — numbered, user-observable behaviors a human clicks through to
@@ -216,7 +219,8 @@ When reported findings get fixed later in this session — you are asked to fix 
 later work fixes them incidentally — call `ReportFindings` again with the same findings,
 each carrying an `outcome`: `fixed`, `no_change_needed` (the finding was wrong or
 already handled), or `skipped` (real but not applied). Make that call immediately after
-the fixes land, before any prose summary. Per-finding status only updates from it.
+the fixes land, before any prose summary. Per-finding status only updates from it. When the tool is not
+available, print the per-finding outcomes as a list instead.
 
 ## Out of scope
 
